@@ -2857,6 +2857,172 @@ client.on("interactionCreate", async (i) => {
   return handleRouletteAction(i, target);
 });
 
+// 🖼️ تحميل صورة القالب الثابتة (مرة وحدة فقط)
+const path = require('path');
+const { createCanvas, loadImage } = require('canvas');
+
+const TEMPLATE_PATH = path.join(__dirname, 'assets', 'trivia_base.png');
+let triviaBaseImage = null;
+
+async function loadTriviaTemplate() {
+  if (!triviaBaseImage) triviaBaseImage = await loadImage(TEMPLATE_PATH);
+}
+
+// 🧠 دالة ترسم سؤال تريفيا بصورة ديناميكية
+async function generateTriviaImage(question, options) {
+  await loadTriviaTemplate();
+
+  const canvas = createCanvas(768, 512);
+  const ctx = canvas.getContext('2d');
+
+  ctx.drawImage(triviaBaseImage, 0, 0, canvas.width, canvas.height);
+
+  ctx.font = 'bold 28px DejaVu Sans';
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'right';
+  ctx.direction = 'rtl';
+
+  const wrappedQuestion = wrapText(ctx, question, 550);
+  drawWrappedText(ctx, wrappedQuestion, 660, 100);
+
+  const positions = [
+    [660, 210],
+    [360, 210],
+    [660, 290],
+    [360, 290],
+  ];
+  options.forEach((opt, i) => {
+    const text = `${i + 1}. ${opt}`;
+    ctx.fillText(text, positions[i][0], positions[i][1]);
+  });
+
+  return canvas.toBuffer();
+}
+
+function wrapText(ctx, text, maxWidth) {
+  const words = text.split(' ');
+  let line = '';
+  let result = [];
+
+  for (let i = 0; i < words.length; i++) {
+    const testLine = line + words[i] + ' ';
+    const width = ctx.measureText(testLine).width;
+    if (width > maxWidth && line) {
+      result.push(line);
+      line = words[i] + ' ';
+    } else {
+      line = testLine;
+    }
+  }
+  if (line) result.push(line);
+  return result;
+}
+
+function drawWrappedText(ctx, lines, x, y, lineHeight = 32) {
+  lines.forEach((line, i) => {
+    ctx.fillText(line.trim(), x, y + i * lineHeight);
+  });
+}
+
+// 🕹️ تشغيل لعبة تريفيا
+async function startTriviaGame(interaction, db) {
+  const channelId = interaction.channel.id;
+  const userId = interaction.user.id;
+  let usedIds = new Set();
+  let scoreMap = new Map();
+  let round = 0;
+
+  async function nextRound() {
+    round++;
+    if (round > 5) return endGame();
+
+    let questionDoc;
+    const total = await db.collection('trivia_questions').countDocuments();
+    if (usedIds.size === total) usedIds.clear();
+
+    do {
+      questionDoc = await db.collection('trivia_questions').aggregate([{ $sample: { size: 1 } }]).next();
+    } while (usedIds.has(questionDoc._id.toString()));
+    usedIds.add(questionDoc._id.toString());
+
+    const buffer = await generateTriviaImage(questionDoc.question, questionDoc.options);
+    const attachment = new AttachmentBuilder(buffer, { name: 'trivia.png' });
+
+    const buttons = new ActionRowBuilder().addComponents(
+      questionDoc.options.map((_, i) =>
+        new ButtonBuilder()
+          .setCustomId(`trivia_answer_${round}_${i}`)
+          .setLabel((i + 1).toString())
+          .setStyle(ButtonStyle.Secondary)
+      )
+    );
+
+    await interaction.editReply({ content: `🧠 **السؤال ${round}**`, files: [attachment], components: [buttons] });
+
+    const collector = interaction.channel.createMessageComponentCollector({ time: 60000 });
+    let answered = false;
+
+    collector.on('collect', async (btn) => {
+      if (!btn.customId.startsWith(`trivia_answer_${round}_`)) return;
+      if (answered) return btn.reply({ content: '❌ الإجابة تم اختيارها بالفعل!', ephemeral: true });
+
+      const choice = parseInt(btn.customId.split('_')[3]);
+      if (choice === questionDoc.correct) {
+        answered = true;
+        scoreMap.set(btn.user.id, (scoreMap.get(btn.user.id) || 0) + 1);
+        await db.collection('users').updateOne(
+          { userId: btn.user.id },
+          { $inc: { wallet: 1000 } },
+          { upsert: true }
+        );
+        await btn.reply({ content: '✅ إجابة صحيحة! كسبت 1000 ريال 💸', ephemeral: true });
+        collector.stop();
+        nextRound();
+      } else {
+        await btn.reply({ content: '❌ إجابتك غلط، حاول مرة أخرى.', ephemeral: true });
+      }
+    });
+
+    collector.on('end', (_, reason) => {
+      if (!answered && reason !== 'messageDelete') endGame();
+    });
+  }
+
+  async function endGame() {
+    const top = [...scoreMap.entries()].sort((a, b) => b[1] - a[1]);
+    const winners = top.map(([id, score], i) => `**${i + 1}. <@${id}>** — ${score} إجابات صحيحة`).join('\n');
+
+    const buttons = new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId('trivia_restart').setLabel('🔁 جولة جديدة').setStyle(ButtonStyle.Primary),
+      new ButtonBuilder().setCustomId('trivia_end').setLabel('❌ إنهاء').setStyle(ButtonStyle.Danger)
+    );
+
+    await interaction.editReply({
+      content: `🏁 **انتهت اللعبة!**\n\n${winners || 'لا أحد أجاب 😢'}`,
+      files: [],
+      components: [buttons]
+    });
+  }
+
+  nextRound();
+}
+
+// ✅ مستمع للرد على أزرار "جولة جديدة" و "إنهاء"
+async function handleTriviaButtons(interaction, db) {
+  if (interaction.customId === 'trivia_restart') {
+    await interaction.deferUpdate();
+    startTriviaGame(interaction, db);
+  } else if (interaction.customId === 'trivia_end') {
+    await interaction.update({ content: '🛑 تم إنهاء اللعبة.', components: [], files: [] });
+  }
+}
+
+// ⛳ للتصدير
+module.exports = {
+  generateTriviaImage,
+  startTriviaGame,
+  handleTriviaButtons
+};
 
 /******************************************
  * 🎮 أمر قمار الموحد                     *
