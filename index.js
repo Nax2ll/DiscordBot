@@ -52,6 +52,21 @@ mongoose.connect('mongodb+srv://Nael:i8VFiKISASCUzX5O@discordbot.wzwjonu.mongodb
 
 client.login(process.env.TOKEN);
 
+
+const express = require('express');
+const app = express();
+
+app.get('/', (req, res) => {
+  res.send('Bot is running!');
+});
+
+app.listen(3000, () => {
+  console.log('🌐 Web server running on port 3000');
+});
+
+
+
+
 const handleShopCommand = require("./commands/shop");
 const handleShopInteraction = require("./shop");
 
@@ -2966,6 +2981,9 @@ client.on("interactionCreate", async (i) => {
   const target = i.customId.replace("roulette_", "");
   return handleRouletteAction(i, target);
 });
+////////////////////////////////////////////
+// ✅ تريفيا - لعبة الأسئلة والأجوبة
+////////////////////////////////////////////
 
 client.on('messageCreate', async (message) => {
   if (message.content === 'تريفيا') {
