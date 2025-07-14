@@ -6,10 +6,10 @@
 /******************************************
  * 1)         المتغيّرات العامة          *
  ******************************************/
-const { Client, GatewayIntentBits, Events, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder,  ModalBuilder,  TextInputBuilder,TextInputStyle
-
+const { Client, GatewayIntentBits, Events, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder,  ModalBuilder,  TextInputBuilder,TextInputStyle,AttachmentBuilder,StringSelectMenuOptionBuilder
  } = require("discord.js");
 const { MongoClient } = require("mongodb");
+const mongoose = require('mongoose');
 const dotenv = require("dotenv");
 dotenv.config();
 const activeGames = {};
@@ -34,11 +34,60 @@ async function connectToMongo() {
     await mongoClient.connect();
     db = mongoClient.db("discord_casino");
     console.log("✅ MongoDB Connected!");
+
+
   } catch (err) {
     console.error("❌ MongoDB Connection Error:", err);
   }
 }
 connectToMongo();
+
+
+mongoose.connect('mongodb+srv://Nael:i8VFiKISASCUzX5O@discordbot.wzwjonu.mongodb.net/discord_casino?retryWrites=true&w=majority&appName=DiscordBot')
+  .then(() => console.log('✅ Mongoose Connected!'))
+  .catch((err) => console.error('❌ Mongoose Connection Error:', err));
+
+
+
+
+client.login(process.env.TOKEN);
+
+const handleShopCommand = require("./commands/shop");
+const handleShopInteraction = require("./shop");
+
+client.on("messageCreate", async (message) => {
+  if (message.author.bot) return;
+  if (message.content.trim() === "المتجر") {
+    return handleShopCommand(message);
+  }
+});
+
+client.on("interactionCreate", async (interaction) => {
+  if (interaction.isStringSelectMenu()) {
+    const value = interaction.values?.[0];
+    const id = interaction.customId;
+
+    // نمرر أي interaction من select menus إلى shop
+    return handleShopInteraction(interaction, db);
+  }
+
+ if (
+  interaction.isButton() &&
+  [
+    "shop_back",
+    "confirm_roles_purchase",
+    "confirm_mention_jail",
+    "confirm_mention_bail",
+    "confirm_visit",
+    "confirm_timeout",
+    "confirm_mute",
+    "confirm_steal"
+  ].includes(interaction.customId)
+) {
+  return handleShopInteraction(interaction, db);
+}
+
+});
 
 /******************************************
  * 3)        نظام المحفظة الجديد         *
@@ -84,7 +133,57 @@ async function subtractBalance(userId, amount) {
   );
 }
 
+// 📦 دوال المتجر - ضيفها بجانب دوال الاقتصاد
 
+async function getShopItems(section) {
+  return await db.collection("shop_items").find({ section }).toArray();
+}
+
+async function getUserInventory(userId) {
+  const user = await db.collection("user_items").findOne({ userId });
+  return user?.items || {};
+}
+
+async function canBuyItem(userId, item) {
+  const balance = await getBalance(userId);
+  if (balance < item.price) return { ok: false, reason: "❌ رصيدك لا يكفي." };
+  if (item.stock <= 0) return { ok: false, reason: "❌ الغرض غير متوفر حالياً." };
+
+  const inventory = await getUserInventory(userId);
+  const owned = inventory[item.itemId] || 0;
+  if (owned >= item.maxPerUser) return { ok: false, reason: "❌ لا يمكنك شراء أكثر من نسخة." };
+
+  return { ok: true };
+}
+
+async function buyItem(userId, item) {
+  await subtractBalance(userId, item.price);
+  await db.collection("shop_items").updateOne({ itemId: item.itemId }, { $inc: { stock: -1 } });
+  await db.collection("user_items").updateOne(
+    { userId },
+    { $inc: { [`items.${item.itemId}`]: 1 } },
+    { upsert: true }
+  );
+}
+
+// التعديل على الدالة نفسها
+async function updateBalanceWithLog(db, userId, amount, reason) {
+  const users = db.collection('users');
+  const transactions = db.collection('transactions');
+
+  await users.updateOne(
+    { userId },
+    { $inc: { balance: amount } },
+    { upsert: true }
+  );
+
+  await transactions.insertOne({
+    userId,
+    amount,
+    reason,
+    timestamp: new Date()
+  });
+}
 
 
 /******************************************
@@ -352,7 +451,6 @@ async function handleSoloGameResult(interaction, gameId, didWin, multiplier = 0)
 
 
 
-
 /******************************************
  * 🎰 لعبة روليت (فردية ضد الحظ) - محدثة  *
  ******************************************/
@@ -368,21 +466,21 @@ async function startSoloRoulette(interaction, bet) {
   ];
 
   const colorRow = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId("roulette_color_red").setLabel("🔴 أحمر").setStyle(ButtonStyle.Danger),
-    new ButtonBuilder().setCustomId("roulette_color_black").setLabel("⚫ أسود").setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId("roulette_color_green").setLabel("🟢 أخضر").setStyle(ButtonStyle.Success)
+    new ButtonBuilder().setCustomId("solo_roulette_color_red").setLabel("🔴 أحمر").setStyle(ButtonStyle.Danger),
+    new ButtonBuilder().setCustomId("solo_roulette_color_black").setLabel("⚫ أسود").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId("solo_roulette_color_green").setLabel("🟢 أخضر").setStyle(ButtonStyle.Success)
   );
 
   const parityRow = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId("roulette_parity_even").setLabel("زوجي").setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId("roulette_parity_odd").setLabel("فردي").setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId("roulette_cancel").setLabel("❌ انسحاب").setStyle(ButtonStyle.Danger)
+    new ButtonBuilder().setCustomId("solo_roulette_parity_even").setLabel("زوجي").setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId("solo_roulette_parity_odd").setLabel("فردي").setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId("solo_roulette_cancel").setLabel("❌ انسحاب").setStyle(ButtonStyle.Danger)
   );
 
   const rangeRow = new ActionRowBuilder();
   for (const r of ranges) {
     rangeRow.addComponents(
-      new ButtonBuilder().setCustomId("roulette_range_" + r.id).setLabel(r.label).setStyle(ButtonStyle.Secondary)
+      new ButtonBuilder().setCustomId("solo_roulette_range_" + r.id).setLabel(r.label).setStyle(ButtonStyle.Secondary)
     );
   }
 
@@ -402,9 +500,9 @@ async function startSoloRoulette(interaction, bet) {
   let multiplier = 0;
 
   collector.on("collect", async (btn) => {
-    if (btn.user.id !== userId) {
-      return btn.reply({ content: "❌ هذا التفاعل ليس لك!", ephemeral: true });
-    }
+    if (btn.user.id !== userId) return;
+
+    
 
     const number = Math.floor(Math.random() * 37);
     const color = number === 0 ? "green" : redNumbers.includes(number) ? "red" : "black";
@@ -439,23 +537,23 @@ async function startSoloRoulette(interaction, bet) {
 
     else if (btn.customId === "roulette_cancel") {
       collector.stop();
-      return btn.update({ content: "❌ تم إلغاء الجولة.", embeds: [], components: [] });
+      await sent.edit({ content: "❌ تم إلغاء الجولة.", embeds: [], components: [] });
+      return;
     }
 
     collector.stop();
 
     let net = 0;
     let resultText = "";
-    if (won) {
-      net = bet * multiplier;
-      addBalance(userId, net);
-      resultText = `🎉 فزت! ✅ الرقم: **${number} ${emoji}**
-الربح: ${net.toLocaleString()} كاش`;
-    } else {
-      addBalance(userId, -bet);
-      resultText = `💸 خسرت! ❌ الرقم: **${number} ${emoji}**
-الرهان: ${bet.toLocaleString()} كاش`;
-    }
+  if (won) {
+  net = bet * multiplier;
+  await updateBalanceWithLog(db,userId, net, `ربح من لعبة المراهنة`);
+  resultText = `🎉 فزت! ✅ الرقم: **${number} ${emoji}**\nالربح: ${net.toLocaleString()} كاش`;
+} else {
+  await updateBalanceWithLog(db,userId, -bet, `خسارة من لعبة المراهنة`);
+  resultText = `💸 خسرت! ❌ الرقم: **${number} ${emoji}**\nالرهان: ${bet.toLocaleString()} كاش`;
+}
+
 
     await updateSoloStats(userId, "soloroulette", bet, won, net);
 
@@ -464,11 +562,10 @@ async function startSoloRoulette(interaction, bet) {
       .setDescription(resultText)
       .setColor(won ? 0x2ecc71 : 0xe74c3c);
 
-    btn.update({ embeds: [resultEmbed], components: [] });
+    await sent.edit({ embeds: [resultEmbed], components: [] });
     setTimeout(() => sent.delete().catch(() => {}), 5000);
   });
 }
-
 
 
 /******************************************
@@ -723,204 +820,217 @@ client.on('interactionCreate', async interaction => {
   }
 });
 
-// 🚌 Ride the Bus - نسخة محسنة خالية تمامًا من undefined
 
-const busGames = new Map();
+// 🃏 تحدي الأوراق - Ride the Bus
 
-const suits = ["♠️", "♥️", "♦️", "♣️"];
-const colors = { "♠️": "أسود", "♣️": "أسود", "♥️": "أحمر", "♦️": "أحمر" };
+const rideBusGames = new Map();
 
-function createDeck() {
+function drawUniqueCard(drawn, excludeValues = []) {
+  const suits = ["♥️", "♦️", "♣️", "♠️"];
+  const values = Array.from({ length: 13 }, (_, i) => i + 1);
   const deck = [];
-  for (let value = 1; value <= 13; value++) {
-    for (const suit of suits) {
-      const symbol = value === 1 ? "A" : value === 11 ? "J" : value === 12 ? "Q" : value === 13 ? "K" : value;
-      deck.push({ value, suit, symbol });
+  for (const suit of suits) {
+    for (const value of values) {
+      if (!drawn.find(c => c.suit === suit && c.value === value) && !excludeValues.includes(value)) {
+        deck.push({ suit, value });
+      }
     }
   }
-  return shuffle(deck);
+  return deck[Math.floor(Math.random() * deck.length)];
 }
 
-function shuffle(array) {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
-  return array;
+function getExpiryTimestamp(seconds) {
+  return `<t:${Math.floor(Date.now() / 1000) + seconds}:R>`;
 }
 
-function drawCard(game, step) {
-  const card = game.deck.pop();
-  if (!card || !card.suit || !card.symbol || !card.value) return null;
-  game.cards[step - 1] = card;
-  return card;
-}
-
-function formatCard(card) {
-  return `${card.symbol}${card.suit}`;
+function deleteMessageLater(message, delay = 5000) {
+  setTimeout(() => {
+    message.delete().catch(() => {});
+  }, delay);
 }
 
 async function startSoloBus(interaction, bet) {
-  if (!interaction.replied && !interaction.deferred) await interaction.deferUpdate({ ephemeral: true });
-
-  const game = {
-    step: 1,
-    bet,
-    userId: interaction.user.id,
-    cards: [],
-    deck: createDeck()
-  };
-
-  busGames.set(game.userId, game);
+  const userId = interaction.user.id;
+  const drawn = [];
+  const sent = await interaction.channel.send({ content: "جارٍ بدء اللعبة..." });
+  rideBusGames.set(userId, { stage: 1, drawn, bet, msg: sent });
 
   const embed = new EmbedBuilder()
-    .setTitle("🚌 Ride the Bus - الجولة 1")
-    .setDescription("اختر لون الورقة الأولى: ❤️ أحمر أو ♠️ أسود؟")
-    .setColor(0x1abc9c);
+    .setTitle("🃏 الجولة الأولى")
+    .setDescription(`🎯 ما هو لون البطاقة القادمة؟\n⏳ ينتهي خلال ${getExpiryTimestamp(20)}`)
+    .setColor("#e74c3c");
 
   const row = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId("bus_red").setLabel("❤️ أحمر").setStyle(ButtonStyle.Danger),
-    new ButtonBuilder().setCustomId("bus_black").setLabel("♠️ أسود").setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId("bus_quit").setLabel("❌ انسحاب").setStyle(ButtonStyle.Secondary)
+    new ButtonBuilder().setCustomId("bus_red").setLabel("🔴 أحمر").setStyle(ButtonStyle.Danger),
+    new ButtonBuilder().setCustomId("bus_black").setLabel("⚫ أسود").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId("bus_quit").setLabel("❌ انسحاب").setStyle(ButtonStyle.Danger)
   );
 
-  const msg = await interaction.channel.send({ embeds: [embed], components: [row] });
-  busGames.set(`${game.userId}_messageId`, msg.id);
+  await sent.edit({ content: " ", embeds: [embed], components: [row] });
+
+  setTimeout(() => {
+    const game = rideBusGames.get(userId);
+    if (game && game.stage === 1) {
+      rideBusGames.delete(userId);
+      sent.edit({ content: `⏰ انتهى الوقت! خسرت الرهان.`, embeds: [], components: [] });
+      deleteMessageLater(sent);
+    }
+  }, 20000);
 }
 
-async function handleBusButtons(interaction) {
-  const userId = interaction.user.id;
-  const game = busGames.get(userId);
-  if (!game) return interaction.reply({ content: "❌ لا يوجد لعبة قيد التشغيل.", ephemeral: true });
+client.on("interactionCreate", async i => {
+  if (!i.isButton()) return;
+  if (!i.customId.startsWith("bus_")) return;
+  await i.deferUpdate();
 
-  if (interaction.customId === "bus_quit") {
-    await addBalance(userId, game.bet);
-    busGames.delete(userId);
-    return interaction.update({ content: `❌ انسحبت من اللعبة. تم استرجاع ${game.bet.toLocaleString()} ريال.`, embeds: [], components: [] });
+  const userId = i.user.id;
+  const game = rideBusGames.get(userId);
+  if (!game) return;
+
+  const { stage, drawn, bet, msg } = game;
+  const suitEmoji = { "♥️": "♥️", "♦️": "♦️", "♣️": "♣️", "♠️": "♠️" };
+
+  if (i.customId === "bus_quit") {
+    const multipliers = { 1: 1, 2: 2, 3: 5, 4: 10 };
+    const refund = bet * multipliers[stage];
+    await addBalance(userId, refund);
+    rideBusGames.delete(userId);
+    return msg.edit({ content: `❌ انسحبت من التحدي! تم استرجاع ${refund.toLocaleString()} ريال.`, embeds: [], components: [] }).then(deleteMessageLater);
   }
 
-  await interaction.deferUpdate();
+  // جولة 1
+  if (stage === 1 && ["bus_red", "bus_black"].includes(i.customId)) {
+    const guess = i.customId === "bus_red" ? "red" : "black";
+    const card = drawUniqueCard(drawn);
+    drawn.push(card);
+    const isRed = card.suit === "♥️" || card.suit === "♦️";
+    const result = (isRed && guess === "red") || (!isRed && guess === "black");
 
-  const replyAndEnd = async (text, won = false, earned = 0) => {
-    await updateSoloStats(userId, "solobus", game.bet, won, earned);
+    if (!result) {
+      rideBusGames.delete(userId);
+      return msg.edit({ content: `❌ البطاقة كانت ${suitEmoji[card.suit]}${card.value}، توقّعك خاطئ! خسرت الرهان.`, embeds: [], components: [] }).then(deleteMessageLater);
+    }
+
+    game.stage = 2;
     const embed = new EmbedBuilder()
-      .setTitle("🚌 Ride the Bus - النتيجة")
-      .setDescription(text)
-      .setColor(won ? 0x2ecc71 : 0xe74c3c)
-      .setFooter({ text: `رهان: ${game.bet.toLocaleString()} ريال` });
-    const msg = await interaction.channel.send({ embeds: [embed] });
-    setTimeout(() => msg.delete().catch(() => {}), 5000);
-
-    const introMsgId = busGames.get(`${userId}_messageId`);
-    if (introMsgId) interaction.channel.messages.fetch(introMsgId).then(m => m.delete().catch(() => {})).catch(() => {});
-    busGames.delete(userId);
-  };
-
-  // Step 1: Red or Black
-  if (game.step === 1) {
-    const card = drawCard(game, 1);
-    if (!card) return replyAndEnd("❌ تعذر سحب الورقة.");
-
-    const choice = interaction.customId === "bus_red" ? "أحمر" : "أسود";
-    const actual = colors[card.suit];
-    if (choice !== actual)
-      return replyAndEnd(`❌ الورقة كانت ${formatCard(card)} (${actual})، خسرت.`);
-
-    game.step = 2;
-    const embed = new EmbedBuilder()
-      .setTitle("🚌 Ride the Bus - الجولة 2")
-      .setDescription(`✔️ ${formatCard(card)} صح!
-هل الورقة التالية أعلى أم أقل؟`)
-      .setColor(0xf39c12);
+      .setTitle("🃏 الجولة الثانية")
+      .setDescription(`🔢 بطاقتك السابقة: ${suitEmoji[card.suit]}${card.value}\nهل تتوقع البطاقة التالية أكبر أم أصغر؟\n⏳ ينتهي خلال ${getExpiryTimestamp(20)}`)
+      .setColor("#f39c12");
 
     const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId("bus_higher").setLabel("⬆️ أعلى").setStyle(ButtonStyle.Success),
-      new ButtonBuilder().setCustomId("bus_lower").setLabel("⬇️ أقل").setStyle(ButtonStyle.Danger)
+      new ButtonBuilder().setCustomId("bus_high").setLabel("🔼 أكبر").setStyle(ButtonStyle.Success),
+      new ButtonBuilder().setCustomId("bus_low").setLabel("🔽 أصغر").setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId("bus_quit").setLabel("❌ انسحاب ×2").setStyle(ButtonStyle.Danger)
     );
-    return interaction.channel.send({ embeds: [embed], components: [row] });
+
+    await msg.edit({ content: " ", embeds: [embed], components: [row] });
+
+    setTimeout(() => {
+      const game = rideBusGames.get(userId);
+      if (game && game.stage === 2) {
+        rideBusGames.delete(userId);
+        msg.edit({ content: `⏰ انتهى الوقت! خسرت الرهان.`, embeds: [], components: [] });
+        deleteMessageLater(msg);
+      }
+    }, 20000);
   }
 
-  if (game.step === 2) {
-    const prev = game.cards[0];
-    const card = drawCard(game, 2);
-    if (!card) return replyAndEnd("❌ تعذر سحب الورقة.");
+  // جولة 2
+  if (stage === 2 && ["bus_high", "bus_low"].includes(i.customId)) {
+    const prev = drawn[0];
+    const card = drawUniqueCard(drawn, [prev.value]);
+    drawn.push(card);
+    const result = i.customId === "bus_high" ? card.value > prev.value : card.value < prev.value;
 
-    const higher = interaction.customId === "bus_higher";
-    const correct = higher ? card.value > prev.value : card.value < prev.value;
-    if (!correct) return replyAndEnd(`❌ الورقة كانت ${formatCard(card)}، خسرت.`);
+    if (!result) {
+      rideBusGames.delete(userId);
+      return msg.edit({ content: `❌ البطاقة كانت ${suitEmoji[card.suit]}${card.value}، توقّعك خاطئ! خسرت الرهان.`, embeds: [], components: [] }).then(deleteMessageLater);
+    }
 
-    game.step = 3;
+    game.stage = 3;
     const embed = new EmbedBuilder()
-      .setTitle("🚌 Ride the Bus - الجولة 3")
-      .setDescription(`✔️ ${formatCard(card)} صح!
-هل الورقة التالية داخل أو خارج القيمتين؟`)
-      .setColor(0x2980b9);
+      .setTitle("🃏 الجولة الثالثة")
+      .setDescription(`🎯 بطاقتك السابقة: ${suitEmoji[drawn[0].suit]}${drawn[0].value} و ${suitEmoji[drawn[1].suit]}${drawn[1].value}\nهل ستكون البطاقة التالية "داخل" أو "خارج" هذا النطاق؟\n⏳ ينتهي خلال ${getExpiryTimestamp(20)}`)
+      .setColor("#9b59b6");
 
     const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId("bus_inside").setLabel("🔄 داخل").setStyle(ButtonStyle.Primary),
-      new ButtonBuilder().setCustomId("bus_outside").setLabel("↔️ خارج").setStyle(ButtonStyle.Secondary)
+      new ButtonBuilder().setCustomId("bus_inside").setLabel("📥 داخل").setStyle(ButtonStyle.Success),
+      new ButtonBuilder().setCustomId("bus_outside").setLabel("📤 خارج").setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId("bus_quit").setLabel("❌ انسحاب ×5").setStyle(ButtonStyle.Danger)
     );
-    return interaction.channel.send({ embeds: [embed], components: [row] });
+
+    await msg.edit({ content: " ", embeds: [embed], components: [row] });
+
+    setTimeout(() => {
+      const game = rideBusGames.get(userId);
+      if (game && game.stage === 3) {
+        rideBusGames.delete(userId);
+        msg.edit({ content: `⏰ انتهى الوقت! خسرت الرهان.`, embeds: [], components: [] });
+        deleteMessageLater(msg);
+      }
+    }, 20000);
   }
 
-  if (game.step === 3) {
-    const c1 = game.cards[0];
-    const c2 = game.cards[1];
-    const card = drawCard(game, 3);
-    if (!card) return replyAndEnd("❌ تعذر سحب الورقة.");
+  // جولة 3
+  if (stage === 3 && ["bus_inside", "bus_outside"].includes(i.customId)) {
+    const values = [drawn[0].value, drawn[1].value];
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const card = drawUniqueCard(drawn, values);
+    drawn.push(card);
+    const isInside = card.value > min && card.value < max;
+    const result = (i.customId === "bus_inside" && isInside) || (i.customId === "bus_outside" && !isInside);
 
-    const min = Math.min(c1.value, c2.value);
-    const max = Math.max(c1.value, c2.value);
-    const between = card.value > min && card.value < max;
+    if (!result) {
+      rideBusGames.delete(userId);
+      return msg.edit({ content: `❌ البطاقة كانت ${suitEmoji[card.suit]}${card.value}، توقّعك خاطئ! خسرت الرهان.`, embeds: [], components: [] }).then(deleteMessageLater);
+    }
 
-    const guessInside = interaction.customId === "bus_inside";
-    const correct = guessInside ? between : !between;
-
-    if (!correct) return replyAndEnd(`❌ الورقة كانت ${formatCard(card)}، خسرت.`);
-
-    game.step = 4;
+    game.stage = 4;
     const embed = new EmbedBuilder()
-      .setTitle("🚌 Ride the Bus - الجولة الأخيرة")
-      .setDescription(`✔️ ${formatCard(card)} صح!
-اختر نوع الورقة الأخيرة:`)
-      .setColor(0x9b59b6);
+      .setTitle("🃏 الجولة الرابعة والأخيرة")
+      .setDescription(`🎯 ما هو نوع (رمز) البطاقة القادمة؟\n📦 البطاقة السابقة: ${suitEmoji[drawn[2].suit]}${drawn[2].value}\n⏳ ينتهي خلال ${getExpiryTimestamp(20)}`)
+      .setColor("#1abc9c");
 
     const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId("bus_♠️").setLabel("♠️").setStyle(ButtonStyle.Secondary),
       new ButtonBuilder().setCustomId("bus_♥️").setLabel("♥️").setStyle(ButtonStyle.Danger),
-      new ButtonBuilder().setCustomId("bus_♦️").setLabel("♦️").setStyle(ButtonStyle.Primary),
-      new ButtonBuilder().setCustomId("bus_♣️").setLabel("♣️").setStyle(ButtonStyle.Success)
+      new ButtonBuilder().setCustomId("bus_♦️").setLabel("♦️").setStyle(ButtonStyle.Danger),
+      new ButtonBuilder().setCustomId("bus_♣️").setLabel("♣️").setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId("bus_♠️").setLabel("♠️").setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId("bus_quit").setLabel("❌ انسحاب ×10").setStyle(ButtonStyle.Danger)
     );
-    return interaction.channel.send({ embeds: [embed], components: [row] });
+
+    await msg.edit({ content: " ", embeds: [embed], components: [row] });
+
+    setTimeout(() => {
+      const game = rideBusGames.get(userId);
+      if (game && game.stage === 4) {
+        rideBusGames.delete(userId);
+        msg.edit({ content: `⏰ انتهى الوقت! خسرت الرهان.`, embeds: [], components: [] });
+        deleteMessageLater(msg);
+      }
+    }, 20000);
   }
 
-  if (game.step === 4) {
-    const card = drawCard(game, 4);
-    if (!card) return replyAndEnd("❌ تعذر سحب الورقة.");
+  // جولة 4
+  if (stage === 4 && i.customId.startsWith("bus_")) {
+    const guessSuit = i.customId.replace("bus_", "");
+    const card = drawUniqueCard(drawn);
+    const win = card.suit === guessSuit;
 
-    const guessSuit = interaction.customId.replace("bus_", "");
-    const correct = card.suit === guessSuit;
-
-    if (!correct) return replyAndEnd(`❌ الورقة كانت ${formatCard(card)} (${colors[card.suit]})، خسرت.`);
-
-    const reward = game.bet * 20;
-    await addBalance(userId, reward);
-    return replyAndEnd(`🎉 ${formatCard(card)} صح! فزت بـ ${reward.toLocaleString()} ريال 🔥`, true, reward);
-  }
-}
-
-client.on("interactionCreate", async interaction => {
-  if (!interaction.isButton()) return;
-  const id = interaction.customId;
-  if (id.startsWith("bus_")) {
-    try {
-      await handleBusButtons(interaction);
-    } catch (err) {
-      console.error("Ride the Bus Error:", err);
-      if (!interaction.replied) interaction.reply({ content: "❌ حصل خطأ أثناء اللعبة.", ephemeral: true }).catch(() => {});
+    if (win) {
+      const reward = bet * 20;
+      await addBalance(userId, reward);
+      await updateSoloStats(userId, "solocard", bet, true, reward);
+      rideBusGames.delete(userId);
+      return msg.edit({ content: `🏆 البطاقة كانت ${suitEmoji[card.suit]}${card.value}، وفزت بـ ${reward.toLocaleString()} ريال!`, embeds: [], components: [] }).then(deleteMessageLater);
+    } else {
+      rideBusGames.delete(userId);
+      return msg.edit({ content: `❌ البطاقة كانت ${suitEmoji[card.suit]}${card.value}، توقّعك خاطئ! خسرت الرهان.`, embeds: [], components: [] }).then(deleteMessageLater);
     }
   }
 });
+
 
 // 🎴 Blackjack Solo - نسخة محسّنة ومتكاملة
 
@@ -2857,78 +2967,33 @@ client.on("interactionCreate", async (i) => {
   return handleRouletteAction(i, target);
 });
 
-// 🖼️ تحميل صورة القالب الثابتة (مرة وحدة فقط)
-const path = require('path');
-const { createCanvas, loadImage } = require('canvas');
+client.on('messageCreate', async (message) => {
+  if (message.content === 'تريفيا') {
+    if (!message.guild) return;
 
-const TEMPLATE_PATH = path.join(__dirname, 'assets', 'trivia_base.png');
-let triviaBaseImage = null;
-
-async function loadTriviaTemplate() {
-  if (!triviaBaseImage) triviaBaseImage = await loadImage(TEMPLATE_PATH);
-}
-
-// 🧠 دالة ترسم سؤال تريفيا بصورة ديناميكية
-async function generateTriviaImage(question, options) {
-  await loadTriviaTemplate();
-
-  const canvas = createCanvas(768, 512);
-  const ctx = canvas.getContext('2d');
-
-  ctx.drawImage(triviaBaseImage, 0, 0, canvas.width, canvas.height);
-
-  ctx.font = 'bold 28px DejaVu Sans';
-  ctx.fillStyle = '#ffffff';
-  ctx.textAlign = 'right';
-  ctx.direction = 'rtl';
-
-  const wrappedQuestion = wrapText(ctx, question, 550);
-  drawWrappedText(ctx, wrappedQuestion, 660, 100);
-
-  const positions = [
-    [660, 210],
-    [360, 210],
-    [660, 290],
-    [360, 290],
-  ];
-  options.forEach((opt, i) => {
-    const text = `${i + 1}. ${opt}`;
-    ctx.fillText(text, positions[i][0], positions[i][1]);
-  });
-
-  return canvas.toBuffer();
-}
-
-function wrapText(ctx, text, maxWidth) {
-  const words = text.split(' ');
-  let line = '';
-  let result = [];
-
-  for (let i = 0; i < words.length; i++) {
-    const testLine = line + words[i] + ' ';
-    const width = ctx.measureText(testLine).width;
-    if (width > maxWidth && line) {
-      result.push(line);
-      line = words[i] + ' ';
-    } else {
-      line = testLine;
-    }
+    await message.channel.send('🎮 جاري بدء لعبة تريفيا...');
+    const fakeInteraction = {
+      channel: message.channel,
+      user: message.author,
+      editReply: (data) => message.channel.send(data),
+      deferUpdate: async () => {},
+      update: (data) => message.channel.send(data),
+      customId: null,
+    };
+    startTriviaGame(fakeInteraction, db);
   }
-  if (line) result.push(line);
-  return result;
-}
+});
 
-function drawWrappedText(ctx, lines, x, y, lineHeight = 32) {
-  lines.forEach((line, i) => {
-    ctx.fillText(line.trim(), x, y + i * lineHeight);
-  });
-}
 
-// 🕹️ تشغيل لعبة تريفيا
-async function startTriviaGame(interaction, db) {
+// 🕹️ تشغيل لعبة تريفيا باستخدام ملف JSON محلي وصور محلية
+const fs = require('fs');
+const path = require('path');
+const questions = JSON.parse(fs.readFileSync(path.join(__dirname, 'data', 'questions.json')));
+
+async function startTriviaGame(interaction) {
   const channelId = interaction.channel.id;
   const userId = interaction.user.id;
-  let usedIds = new Set();
+  let usedIndices = new Set();
   let scoreMap = new Map();
   let round = 0;
 
@@ -2936,28 +3001,32 @@ async function startTriviaGame(interaction, db) {
     round++;
     if (round > 5) return endGame();
 
-    let questionDoc;
-    const total = await db.collection('trivia_questions').countDocuments();
-    if (usedIds.size === total) usedIds.clear();
+    if (usedIndices.size === questions.length) usedIndices.clear();
 
+    let index;
     do {
-      questionDoc = await db.collection('trivia_questions').aggregate([{ $sample: { size: 1 } }]).next();
-    } while (usedIds.has(questionDoc._id.toString()));
-    usedIds.add(questionDoc._id.toString());
+      index = Math.floor(Math.random() * questions.length);
+    } while (usedIndices.has(index));
+    usedIndices.add(index);
 
-    const buffer = await generateTriviaImage(questionDoc.question, questionDoc.options);
-    const attachment = new AttachmentBuilder(buffer, { name: 'trivia.png' });
+    const questionDoc = questions[index];
+
+    const imagePath = path.join(__dirname, 'images', 'questions', questionDoc.image);
+    const attachment = new AttachmentBuilder(imagePath);
 
     const buttons = new ActionRowBuilder().addComponents(
-      questionDoc.options.map((_, i) =>
+      [1, 2, 3, 4].map((num) =>
         new ButtonBuilder()
-          .setCustomId(`trivia_answer_${round}_${i}`)
-          .setLabel((i + 1).toString())
+          .setCustomId(`trivia_answer_${round}_${num}`)
+          .setLabel(num.toString())
           .setStyle(ButtonStyle.Secondary)
       )
     );
 
-    await interaction.editReply({ content: `🧠 **السؤال ${round}**`, files: [attachment], components: [buttons] });
+    await interaction.editReply({
+      files: [attachment],
+      components: [buttons]
+    });
 
     const collector = interaction.channel.createMessageComponentCollector({ time: 60000 });
     let answered = false;
@@ -2967,14 +3036,9 @@ async function startTriviaGame(interaction, db) {
       if (answered) return btn.reply({ content: '❌ الإجابة تم اختيارها بالفعل!', ephemeral: true });
 
       const choice = parseInt(btn.customId.split('_')[3]);
-      if (choice === questionDoc.correct) {
+      if (choice === questionDoc.answer) {
         answered = true;
         scoreMap.set(btn.user.id, (scoreMap.get(btn.user.id) || 0) + 1);
-        await db.collection('users').updateOne(
-          { userId: btn.user.id },
-          { $inc: { wallet: 1000 } },
-          { upsert: true }
-        );
         await btn.reply({ content: '✅ إجابة صحيحة! كسبت 1000 ريال 💸', ephemeral: true });
         collector.stop();
         nextRound();
@@ -2999,7 +3063,6 @@ async function startTriviaGame(interaction, db) {
 
     await interaction.editReply({
       content: `🏁 **انتهت اللعبة!**\n\n${winners || 'لا أحد أجاب 😢'}`,
-      files: [],
       components: [buttons]
     });
   }
@@ -3008,27 +3071,22 @@ async function startTriviaGame(interaction, db) {
 }
 
 // ✅ مستمع للرد على أزرار "جولة جديدة" و "إنهاء"
-async function handleTriviaButtons(interaction, db) {
+async function handleTriviaButtons(interaction) {
   if (interaction.customId === 'trivia_restart') {
     await interaction.deferUpdate();
-    startTriviaGame(interaction, db);
+    startTriviaGame(interaction);
   } else if (interaction.customId === 'trivia_end') {
-    await interaction.update({ content: '🛑 تم إنهاء اللعبة.', components: [], files: [] });
+    await interaction.update({ content: '🛑 تم إنهاء اللعبة.', components: [] });
   }
 }
 
-// ⛳ للتصدير
-module.exports = {
-  generateTriviaImage,
-  startTriviaGame,
-  handleTriviaButtons
-};
+
 
 /******************************************
  * 🎮 أمر قمار الموحد                     *
  ******************************************/
 client.on("messageCreate", async (msg) => {
-  if (!msg.content.startsWith("قمار")) return;
+  if (!msg.content.startsWith("قمار") && !msg.content.startsWith("511")) return;
 
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
@@ -3159,40 +3217,59 @@ const flags = [
   { emoji: "🇫🇷", name: "فرنسا" }
 ];
 
-const shopItems = [
-  {
-    id: "rename_card",
-    name: "🎴 تغيير اسم البطاقة",
-    description: "غيّر اسم بطاقتك الخاصة داخل اللعبة.",
-    price: 5000
-  },
-  {
-    id: "double_xp",
-    name: "✨ مضاعف نقاط لمدة ساعة",
-    description: "ضاعف نقاطك في التريفيا لمدة ساعة واحدة.",
-    price: 7000
-  },
-  {
-    id: "profile_bg",
-    name: "🖼️ خلفية لملفك الشخصي",
-    description: "اختر خلفية مميزة لملفك الشخصي.",
-    price: 3000
-  }
-];
 
-// ✅ أوامر الرسائل
+
+const { createCanvas, loadImage } = require('@napi-rs/canvas');
+
+// دالة لتحميل صورة البروفايل
+async function loadUserAvatar(user) {
+  const url = user.displayAvatarURL({ extension: 'png', size: 256 });
+  return await loadImage(url);
+}
+
+// دالة لرسم صورة دائرية
+function drawCircularImage(ctx, img, x, y, radius) {
+  const size = radius * 2;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.closePath();
+  ctx.clip();
+  ctx.drawImage(img, x - radius, y - radius, size, size);
+  ctx.restore();
+}
+
+// دالة لكتابة النصوص
+function drawText(ctx, text, x, y, font = '100px', color = '#b0d4eb', align = 'center') {
+  ctx.font = font;
+  ctx.fillStyle = color;
+  ctx.textAlign = align;
+  ctx.fillText(text, x, y);
+}
+
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
-  if (message.content === "رصيدي") {
+
+  // أمر الرصيد
+  if (message.content === "رصيد") {
     const balance = await getBalance(message.author.id);
+    const background = await loadImage('./صوره المحفظه.png');
+    const avatarImage = await loadUserAvatar(message.author);
 
-    const embed = new EmbedBuilder()
-      .setTitle("💰 رصيدك")
-      .setDescription(`رصيدك الحالي: **🪙 ${balance.toLocaleString()}**`)
-      .setColor(0xFFD700);
+    const canvas = createCanvas(background.width, background.height);
+    const ctx = canvas.getContext('2d');
 
-    return await message.reply({ embeds: [embed] });
+    ctx.drawImage(background, 0, 0);
+    drawCircularImage(ctx, avatarImage, 294, 237, 139);
+    drawText(ctx, `${balance.toLocaleString('en-US')}`, 750, 605);
+    drawText(ctx, `${message.author.id}`, 300, 950, '35px Arial');
+
+    const buffer = canvas.toBuffer('image/png');
+    const attachment = new AttachmentBuilder(buffer, { name: 'wallet.png' });
+    return message.reply({ files: [attachment] });
   }
+
+  // أمر التحويل
   if (message.content.startsWith("تحويل")) {
     const args = message.content.split(" ");
     const mention = message.mentions.users.first();
@@ -3214,8 +3291,29 @@ client.on("messageCreate", async (message) => {
     await addBalance(message.author.id, -amount);
     await addBalance(mention.id, amount);
 
-    return await message.reply(`✅ تم تحويل **${amount.toLocaleString()}** إلى ${mention}`);
+    const background = await loadImage(path.join(__dirname, 'صوره التحويل.png'));
+    const senderAvatar = await loadUserAvatar(message.author);
+    const receiverAvatar = await loadUserAvatar(mention);
+
+    const canvas = createCanvas(background.width, background.height);
+    const ctx = canvas.getContext('2d');
+
+    ctx.drawImage(background, 0, 0);
+const member = await message.guild.members.fetch(mention.id);
+const nickname = member?.nickname || member.user.username;
+
+    drawCircularImage(ctx, senderAvatar, 330, 237, 160);
+    drawCircularImage(ctx, receiverAvatar, 1320, 237, 160);
+    drawText(ctx, `${amount.toLocaleString('en-US')}`, 850, 430, '115px');
+    drawText(ctx, `${nickname}`, 850, 530, '75px Arial', '#b0d4eb', 'center');
+    drawText(ctx, `${mention.id}`, 850, 600, '25px Arial', '#b0d4eb', 'center');
+    drawText(ctx, `${message.author.id}`, 140, 1050, '35px Arial', '#b0d4eb', 'left');
+
+
+    const buffer = await canvas.encode('png');
+    return await message.reply({ files: [{ attachment: buffer, name: 'transfer.png' }] });
   }
+
 
  
   // 🏁 أسرع
@@ -3251,49 +3349,9 @@ client.on("messageCreate", async (message) => {
     });
   }
 
-  // 🛒 المتجر
-  if (message.content === "المتجر") {
-    const components = shopItems.map((item) =>
-      new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setCustomId(`buy_${item.id}`)
-          .setLabel(`🛒 شراء (${item.price})`)
-          .setStyle(ButtonStyle.Primary)
-      )
-    );
-
-  const embed = new EmbedBuilder()
-  .setTitle("🛒 المتجر")
-  .setColor(0x00AE86)
-  .setDescription(
-  shopItems
-  .map((item) => `**${item.name}**\n${item.description}\n💰 السعر: ${item.price}`)
-  .join("\n\n"));
 
 
-    await message.reply({ embeds: [embed], components });
-  }
+ 
+
 });
 
-// ✅ أزرار التفاعل
-client.on("interactionCreate", async (i) => {
-  if (!i.isButton()) return;
-
-  // زر شراء متجر
-  if (i.customId.startsWith("buy_")) {
-    const userId = i.user.id;
-    const itemId = i.customId.split("buy_")[1];
-    const item = shopItems.find((x) => x.id === itemId);
-    if (!item) return i.reply({ content: "❌ هذا العنصر غير موجود.", ephemeral: true });
-
-    const balance = await getBalance(userId);
-    if (balance < item.price) {
-      return i.reply({ content: `❌ لا تملك رصيد كافي لشراء ${item.name}.`, ephemeral: true });
-    }
-
-    await addBalance(userId, -item.price);
-    return i.reply({ content: `✅ تم شراء ${item.name} بنجاح!`, ephemeral: true });
-  }
-});
-
-client.login(process.env.Discord_Token);
