@@ -22,6 +22,16 @@ const client = new Client({
   ],
 });
 require('dotenv').config();
+
+// ✅ تسجيل خط Cairo لاستخدامه في جميع الألعاب
+const { GlobalFonts } = require("@napi-rs/canvas");
+const path = require("path");
+
+GlobalFonts.registerFromPath(
+  path.join(__dirname, "assets/fonts/Cairo.ttf"),
+  "Cairo"
+);
+
 /******************************************
  * 2)        الاتصال بـ MongoDB          *
  ******************************************/
