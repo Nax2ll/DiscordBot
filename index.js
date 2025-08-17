@@ -25,7 +25,6 @@ require('dotenv').config();
 
 // ✅ تسجيل خط Cairo لاستخدامه في جميع الألعاب
 const { GlobalFonts } = require("@napi-rs/canvas");
-const path = require("path");
 
 // سجل Cairo-Regular باسم "Cairo" (يكفي مره وحده فقط)
 GlobalFonts.registerFromPath(
