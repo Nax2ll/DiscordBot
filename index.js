@@ -134,15 +134,24 @@ client.on("interactionCreate", async (interaction) => {
       return handleHarfModal(interaction); // في حال لعبتك تستخدم مودال إدخال كلمة
     }
 
-    // 🛍️ المتجر (لا تبعث كل القوائم للمتجر—فقط حقه)
-    if (interaction.isStringSelectMenu()) {
-      const id = interaction.customId;
-      if (id === "shop_section_select" || id === "punishments_menu") {
-        return handleShopInteraction(interaction, db);
-      }
-      // غير كذا تجاهل (لأن ممكن يكون مكوّن لشيء ثاني مستقبلاً)
-      return;
-    }
+   // 🛍️ المتجر
+if (interaction.isStringSelectMenu()) {
+  const id = interaction.customId;
+
+  if (
+    id === "shop_section_select" ||
+    id === "punishments_menu" ||
+    id === "roles_menu" ||
+    id === "jail_menu" ||
+    id === "gambling_menu"
+  ) {
+    return handleShopInteraction(interaction, db);
+  }
+
+  // غير كذا تجاهل (ممكن يكون شيء آخر لاحقاً)
+  return;
+}
+
 
     if (
       interaction.isButton() &&
