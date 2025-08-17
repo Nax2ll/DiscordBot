@@ -66,42 +66,106 @@ app.listen(3000, () => {
 
 
 
+// =====[ استيرادات ]=====
+const handleMinigamesCommand = require("./commands/minigames");           // قائمة الميني قيمز (يفتح من أمر "ميني")
+const handleMinigameInteraction = require("./events/interactionHandler"); // معالج اختيارات الميني قيمز
 
-const handleShopCommand = require("./commands/shop");
-const handleShopInteraction = require("./shop");
+const handleShopCommand = require("./commands/shop");       // أمر "المتجر"
+const handleShopInteraction = require("./shop");   // تفاعلات المتجر
 
+// لعبة حرف (داخل مجلد games)
+const harfModule = require("./games/harf");
+const startHarfGame = harfModule.startHarfGame || harfModule; // يدعم حالتي التصدير (دالة أو كائن)
+const showHarfLobby = harfModule.showHarfLobby || (async () => {});
+const handleHarfLobbyInteraction = harfModule.handleHarfLobbyInteraction || (async () => {});
+const handleHarfInteraction = harfModule.handleHarfInteraction || (async () => {});
+const handleHarfModal = harfModule.handleHarfModal || (async () => {});
+
+// =====[ أوامر الرسائل ]=====
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
-  if (message.content.trim() === "المتجر") {
+  const cmd = message.content.trim();
+
+  // 🏪 المتجر
+  if (cmd === "المتجر") {
     return handleShopCommand(message);
+  }
+
+  // 🎮 "ميني" → افتح قائمة الميني قيمز
+  if (cmd === "ميني") {
+    return handleMinigamesCommand(message);
+  }
+
+  // 🔤 "حرف" → افتح لوبي لعبة حرف
+  if (cmd === "حرف") {
+    try {
+      await startHarfGame(message.channel.id);   // تهيئة الحالة
+      return showHarfLobby(message.channel);     // عرض اللوبي
+    } catch (e) {
+      console.error("حرف start error:", e);
+      return message.reply("❌ ما قدرت أبدأ لعبة حرف.");
+    }
   }
 });
 
+// =====[ توجيه التفاعلات ]=====
 client.on("interactionCreate", async (interaction) => {
-  if (interaction.isStringSelectMenu()) {
-    const value = interaction.values?.[0];
-    const id = interaction.customId;
+  try {
+    // 🎮 الميني قيمز أولاً (عشان ما تتبلع بالمتجر)
+    if (interaction.isStringSelectMenu() && interaction.customId === "minigame_menu") {
+      return handleMinigameInteraction(interaction, db);
+    }
+    if (interaction.isButton() && interaction.customId === "minigame_stats") {
+      return handleMinigameInteraction(interaction, db);
+    }
 
-    // نمرر أي interaction من select menus إلى shop
-    return handleShopInteraction(interaction, db);
+    // 🔤 لعبة حرف
+    // - أزرار اللوبي: harf_join / harf_leave / harf_start
+    // - أزرار اللعب: harf_play_* / harf_quit / ... إلخ
+    if (interaction.isButton() && interaction.customId.startsWith("harf_")) {
+      // الملف سيتجاهل الحدث غير الخاص بمرحلته (لوبي/لعب)
+      await handleHarfLobbyInteraction(interaction); // يعمل فقط لو state = lobby
+      return handleHarfInteraction(interaction);     // يعمل فقط لو state = playing
+    }
+    if (interaction.isModalSubmit() && interaction.customId === "harf_submit_modal") {
+      return handleHarfModal(interaction); // في حال لعبتك تستخدم مودال إدخال كلمة
+    }
+
+    // 🛍️ المتجر (لا تبعث كل القوائم للمتجر—فقط حقه)
+    if (interaction.isStringSelectMenu()) {
+      const id = interaction.customId;
+      if (id === "shop_section_select" || id === "punishments_menu") {
+        return handleShopInteraction(interaction, db);
+      }
+      // غير كذا تجاهل (لأن ممكن يكون مكوّن لشيء ثاني مستقبلاً)
+      return;
+    }
+
+    if (
+      interaction.isButton() &&
+      [
+        "shop_back",
+        "confirm_roles_purchase",
+        "confirm_mention_jail",
+        "confirm_mention_bail",
+        "confirm_visit",
+        "confirm_timeout",
+        "confirm_mute",
+        "confirm_steal"
+      ].includes(interaction.customId)
+    ) {
+      return handleShopInteraction(interaction, db);
+    }
+
+    // ... أي تفاعلات أخرى تخص نظامك تضيفها تحت
+  } catch (err) {
+    console.error("interactionCreate error:", err);
+    try {
+      if (!interaction.replied && !interaction.deferred) {
+        await interaction.reply({ content: "حدث خطأ غير متوقع.", ephemeral: true });
+      }
+    } catch {}
   }
-
- if (
-  interaction.isButton() &&
-  [
-    "shop_back",
-    "confirm_roles_purchase",
-    "confirm_mention_jail",
-    "confirm_mention_bail",
-    "confirm_visit",
-    "confirm_timeout",
-    "confirm_mute",
-    "confirm_steal"
-  ].includes(interaction.customId)
-) {
-  return handleShopInteraction(interaction, db);
-}
-
 });
 
 /******************************************
@@ -199,6 +263,45 @@ async function updateBalanceWithLog(db, userId, amount, reason) {
     timestamp: new Date()
   });
 }
+
+// 📑 أمر كشف الحساب (مع تصميم Embed مرتب)
+client.on("messageCreate", async (message) => {
+  if (message.author.bot) return;
+
+  if (message.content === "كشف") {
+    const userId = message.author.id;
+    const transactions = db.collection("transactions");
+
+    const docs = await transactions
+      .find({ userId })
+      .sort({ timestamp: -1 })
+      .limit(5)
+      .toArray();
+
+    if (!docs.length) {
+      return message.reply("📭 لا يوجد أي عمليات مسجلة لحسابك.");
+    }
+
+    const { EmbedBuilder } = require("discord.js");
+
+    const embed = new EmbedBuilder()
+      .setTitle("📋 كشف العمليات الأخيرة")
+      .setColor("Green");
+
+    docs.forEach((tx, i) => {
+      const date = new Date(tx.timestamp);
+      const formattedDate = `<t:${Math.floor(date.getTime() / 1000)}:f>`; // يعرضها بشكل حلو بديسكورد
+
+      embed.addFields({
+        name: `**${i + 1} - ${tx.reason || "عملية"}**`,
+        value: `💰 ${tx.amount > 0 ? `+${tx.amount}` : tx.amount} ريال\n🗓️ ${formattedDate} \n💵`,
+        inline: false
+      });
+    });
+
+    message.reply({ embeds: [embed] });
+  }
+});
 
 
 /******************************************
@@ -3141,12 +3244,12 @@ client.on("interactionCreate", async (i) => {
     ];
 
     const multiGames = [
-      { label: "🧠 بلاك جاك (عام)", value: "multi_blackjack" },
-      { label: "🔫 باكشوت (عام)", value: "multi_buckshot" },
-      { label: "🎯 روليت الإقصاء", value: "multi_kicker" },
+      { label: "🧠 بلاك جاك", value: "multi_blackjack" },
+      { label: "🔫 باكشوت ", value: "multi_buckshot" },
+      { label: "🎯 روليت ", value: "multi_kicker" },
       { label: "🟨 الألوان", value: "multi_colorwar" },
-      { label: "⏳ غرفة الزمن", value: "multi_time" },
-      { label: "💣 عداد الانفجار", value: "multi_bomb" }
+      { label: "⏳ عداد الانفجار", value: "multi_time" },
+      { label: "💣 القنبلة", value: "multi_bomb" }
     ];
 
     const menu = new ActionRowBuilder().addComponents(
@@ -3211,29 +3314,7 @@ client.on("interactionCreate", async (i) => {
 });
 
 
-// ✅ بيانات الألعاب
 
-const triviaQuestions = [
-  {
-    question: "ما هو أكبر كوكب في المجموعة الشمسية؟",
-    options: ["المريخ", "الأرض", "المشتري", "الزُهرة"],
-    correct: 2
-  },
-  {
-    question: "من هو مؤسس شركة مايكروسوفت؟",
-    options: ["ستيف جوبز", "بيل غيتس", "مارك زوكربيرج", "إيلون ماسك"],
-    correct: 1
-  }
-];
-
-const fastWords = ["تكنولوجيا", "ذكاء اصطناعي", "معلومات", "برمجة", "سيارة", "طائرة"];
-
-const flags = [
-  { emoji: "🇸🇦", name: "السعودية" },
-  { emoji: "🇪🇬", name: "مصر" },
-  { emoji: "🇯🇵", name: "اليابان" },
-  { emoji: "🇫🇷", name: "فرنسا" }
-];
 
 
 
@@ -3334,40 +3415,6 @@ const nickname = member?.nickname || member.user.username;
 
 
  
-  // 🏁 أسرع
-  if (message.content === "اسرع") {
-    const word = fastWords[Math.floor(Math.random() * fastWords.length)];
-    await message.channel.send(`⌛ أول من يكتب الكلمة التالية يحصل على 500 عملة:
-\`${word}\``);
-
-    const collector = message.channel.createMessageCollector({ time: 15000 });
-
-    collector.on("collect", async (m) => {
-      if (m.content.trim() === word) {
-        await addBalance(m.author.id, 500);
-        await m.reply("🎉 مبروك! كنت الأسرع وحصلت على 500 عملة.");
-        collector.stop();
-      }
-    });
-  }
-
-  // 🌍 علم الدولة
-  if (message.content === "علم") {
-    const flag = flags[Math.floor(Math.random() * flags.length)];
-    await message.channel.send(`🇺🇳 ما اسم هذه الدولة؟ ${flag.emoji}`);
-
-    const collector = message.channel.createMessageCollector({ time: 15000 });
-
-    collector.on("collect", async (m) => {
-      if (m.content.trim().includes(flag.name)) {
-        await addBalance(m.author.id, 500);
-        await m.reply("🎉 صحيح! حصلت على 500 عملة.");
-        collector.stop();
-      }
-    });
-  }
-
-
 
  
 
