@@ -24,7 +24,6 @@ const client = new Client({
 require('dotenv').config();
 
 
-
 /******************************************
  * 2)        الاتصال بـ MongoDB          *
  ******************************************/
@@ -54,7 +53,6 @@ mongoose.connect('mongodb+srv://Nael:i8VFiKISASCUzX5O@discordbot.wzwjonu.mongodb
 
 
 client.login(process.env.TOKEN);
-
 
 const express = require('express');
 const app = express();
@@ -646,17 +644,20 @@ async function startSoloRoulette(interaction, bet) {
       selectedType = guess;
     }
 
-    else if (btn.customId.startsWith("roulette_parity_")) {
-      const guess = btn.customId.split("_")[2];
-      if (guess === "even") {
-        won = number !== 0 && number % 2 === 0;
-      } else {
-        won = number % 2 === 1;
-      }
-      multiplier = 2;
-      selectedType = guess;
-    }
+else if (btn.customId.startsWith("solo_roulette_parity_")) {
+  const guess = btn.customId.split("_").pop(); // هنا يجيب even أو odd
 
+  if (number === 0) {
+    won = false; // الصفر دائمًا خسارة
+  } else if (guess === "even") {
+    won = number % 2 === 0;
+  } else {
+    won = number % 2 === 1;
+  }
+
+  multiplier = 2;
+  selectedType = guess;
+}
     else if (btn.customId.startsWith("roulette_range_")) {
       const [min, max] = btn.customId.split("_").slice(2).map(Number);
       won = number >= min && number <= max;
@@ -675,13 +676,16 @@ async function startSoloRoulette(interaction, bet) {
 
     let net = 0;
     let resultText = "";
-  if (won) {
-  net = bet * multiplier;
-  await updateBalanceWithLog(db,userId, net, `ربح من لعبة المراهنة`);
+if (won) {
+  const earned = bet * multiplier;
+  const net = earned - bet;
+  await updateBalanceWithLog(db, userId, net, "لعبة روليت - فوز");
   resultText = `🎉 فزت! ✅ الرقم: **${number} ${emoji}**\nالربح: ${net.toLocaleString()} كاش`;
+  await updateSoloStats(userId, "soloroulette", bet, true, earned);
 } else {
-  await updateBalanceWithLog(db,userId, -bet, `خسارة من لعبة المراهنة`);
+  await updateBalanceWithLog(db, userId, -bet, "لعبة روليت - خسارة");
   resultText = `💸 خسرت! ❌ الرقم: **${number} ${emoji}**\nالرهان: ${bet.toLocaleString()} كاش`;
+  await updateSoloStats(userId, "soloroulette", bet, false, 0);
 }
 
 
@@ -796,20 +800,25 @@ async function startSlotMachine(interaction, bet) {
 
   const earned = result.isWin ? bet * result.multiplier : 0;
   const net = earned - bet;
-  if (earned > 0) await addBalance(userId, earned);
+
+  if (result.isWin) {
+    await updateBalanceWithLog(db, userId, net, "🎰 لعبة سلوت - فوز");
+  } else {
+    await updateBalanceWithLog(db, userId, -bet, "🎰 لعبة سلوت - خسارة");
+  }
 
   await updateSoloStats(userId, "soloslot", bet, result.isWin, earned);
 
   const symbols = reels.map(r => r.emoji).join(" | ");
   const rarities = reels.map(r => r.rarity).join(" • ");
-  const finalBal = balance - bet + earned;
+  const finalBal = balance + net;
 
   const embed = new EmbedBuilder()
     .setTitle("🎰 Ultra Slot Machine 🎰")
     .setDescription(`🎰━━━━━━━━━━━━━━━━━━━🎰\n**${symbols}**\n🎰━━━━━━━━━━━━━━━━━━━🎰\n${rarities}\n\n${result.message}`)
     .setColor(result.isWin ? 0x2ecc71 : 0xe74c3c)
     .addFields(
-      { name: result.isWin ? "🏆 الربح" : "💸 الخسارة", value: `${result.isWin ? "+" : "-"}${bet.toLocaleString()} ريال`, inline: true },
+      { name: result.isWin ? "🏆 الربح" : "💸 الخسارة", value: `${result.isWin ? "+" + earned.toLocaleString() : "-" + bet.toLocaleString()} ريال`, inline: true },
       { name: "💳 رصيدك الحالي", value: `${finalBal.toLocaleString()} ريال`, inline: true }
     )
     .setTimestamp();
@@ -828,7 +837,7 @@ const boxOptions = [
   { name: "صندوق فاضي", emoji: "📭", type: "lose", multiplier: 0, weight: 20 },
   { name: "خسارة جزئية", emoji: "🪙", type: "lose", multiplier: 0.5, weight: 15 },
   { name: "خسارة كاملة", emoji: "💀", type: "lose", multiplier: 0, weight: 10 },
-  { name: "مكافأة ثابتة", emoji: "🎉", type: "bonus", amount: 1000, weight: 5 },
+  { name: "مكافأة ثابتة", emoji: "🎉", type: "bonus", amount: 10000, weight: 5 },
   { name: "تايم أوت", emoji: "⏳", type: "timeout", amount: 0, weight: 5 }
 ];
 
@@ -884,32 +893,37 @@ async function handleBoxButtons(interaction) {
     let resultMsg = "";
     let earned = 0;
 
-    switch (box.type) {
-      case "win":
-        earned = bet * box.multiplier;
-        resultMsg = `🎉 ${box.emoji} **${box.name}**! ربحت ${earned.toLocaleString()} ريال`;
-        await addBalance(userId, earned);
-        break;
+switch (box.type) {
+  case "win":
+    earned = bet * box.multiplier;
+    resultMsg = `🎉 ${box.emoji} **${box.name}**! ربحت ${earned.toLocaleString()} ريال`;
+    await updateBalanceWithLog(db, userId, earned - bet, "🎁 صندوق الغموض - فوز");
+    break;
 
-      case "lose":
-        earned = bet * (box.multiplier || 0);
-        resultMsg = `😢 ${box.emoji} **${box.name}**! خسرت ${(bet - earned).toLocaleString()} ريال`;
-        if (earned > 0) await addBalance(userId, earned);
-        break;
-
-      case "bonus":
-        earned = box.amount;
-        resultMsg = `🎁 ${box.emoji} **${box.name}**! حصلت على ${earned.toLocaleString()} ريال كمكافأة`;
-        await addBalance(userId, earned);
-        break;
-
-      case "timeout":
-        resultMsg = `⏳ ${box.emoji} **${box.name}**! ما حصلت شيء هالمرة.`;
-        break;
-
-      default:
-        resultMsg = `❓ نتيجة غير معروفة.`;
+  case "lose":
+    earned = bet * (box.multiplier || 0);
+    resultMsg = `😢 ${box.emoji} **${box.name}**! خسرت ${(bet - earned).toLocaleString()} ريال`;
+    if (earned > 0) {
+      await updateBalanceWithLog(db, userId, earned - bet, "🎁 صندوق الغموض - خسارة جزئية");
+    } else {
+      await updateBalanceWithLog(db, userId, -bet, "🎁 صندوق الغموض - خسارة كاملة");
     }
+    break;
+
+  case "bonus":
+    earned = box.amount;
+    resultMsg = `🎁 ${box.emoji} **${box.name}**! حصلت على ${earned.toLocaleString()} ريال كمكافأة`;
+    await updateBalanceWithLog(db, userId, earned, "🎁 صندوق الغموض - مكافأة");
+    break;
+
+  case "timeout":
+    resultMsg = `⏳ ${box.emoji} **${box.name}**! ما حصلت شيء هالمرة.`;
+    // ⬅️ لا نسجل شيء في transactions
+    break;
+
+  default:
+    resultMsg = `❓ نتيجة غير معروفة.`;
+}
 
     await updateSoloStats(userId, "solobox", bet, earned > bet, earned);
 
@@ -1020,13 +1034,14 @@ client.on("interactionCreate", async i => {
   const { stage, drawn, bet, msg } = game;
   const suitEmoji = { "♥️": "♥️", "♦️": "♦️", "♣️": "♣️", "♠️": "♠️" };
 
-  if (i.customId === "bus_quit") {
-    const multipliers = { 1: 1, 2: 2, 3: 5, 4: 10 };
-    const refund = bet * multipliers[stage];
-    await addBalance(userId, refund);
-    rideBusGames.delete(userId);
-    return msg.edit({ content: `❌ انسحبت من التحدي! تم استرجاع ${refund.toLocaleString()} ريال.`, embeds: [], components: [] }).then(deleteMessageLater);
-  }
+if (i.customId === "bus_quit") {
+  const multipliers = { 1: 1, 2: 2, 3: 5, 4: 10 };
+  const refund = bet * multipliers[stage];
+  await updateBalanceWithLog(db, userId, refund - bet, `🃏 Ride the Bus - انسحاب ×${multipliers[stage]}`);
+  await updateSoloStats(userId, "solobus", bet, false, refund); // انسحاب = مو فوز كامل
+  rideBusGames.delete(userId);
+  return msg.edit({ content: `❌ انسحبت من التحدي! تم استرجاع ${refund.toLocaleString()} ريال.`, embeds: [], components: [] }).then(deleteMessageLater);
+}
 
   // جولة 1
   if (stage === 1 && ["bus_red", "bus_black"].includes(i.customId)) {
@@ -1038,6 +1053,11 @@ client.on("interactionCreate", async i => {
 
     if (!result) {
       rideBusGames.delete(userId);
+      const earned = 0;
+const net = earned - bet; // هذا = -bet
+await updateBalanceWithLog(db, userId, net, "🃏 Ride the Bus - خسارة");
+console.log("Transaction loss saved:", { userId, net, bet });
+await updateSoloStats(userId, "solobus", bet, false, earned);
       return msg.edit({ content: `❌ البطاقة كانت ${suitEmoji[card.suit]}${card.value}، توقّعك خاطئ! خسرت الرهان.`, embeds: [], components: [] }).then(deleteMessageLater);
     }
 
@@ -1074,6 +1094,11 @@ client.on("interactionCreate", async i => {
 
     if (!result) {
       rideBusGames.delete(userId);
+      const earned = 0;
+const net = earned - bet; // هذا = -bet
+await updateBalanceWithLog(db, userId, net, "🃏 Ride the Bus - خسارة");
+console.log("Transaction loss saved:", { userId, net, bet });
+await updateSoloStats(userId, "solobus", bet, false, earned);
       return msg.edit({ content: `❌ البطاقة كانت ${suitEmoji[card.suit]}${card.value}، توقّعك خاطئ! خسرت الرهان.`, embeds: [], components: [] }).then(deleteMessageLater);
     }
 
@@ -1113,6 +1138,11 @@ client.on("interactionCreate", async i => {
 
     if (!result) {
       rideBusGames.delete(userId);
+      const earned = 0;
+const net = earned - bet; // هذا = -bet
+await updateBalanceWithLog(db, userId, net, "🃏 Ride the Bus - خسارة");
+console.log("Transaction loss saved:", { userId, net, bet });
+await updateSoloStats(userId, "solobus", bet, false, earned);
       return msg.edit({ content: `❌ البطاقة كانت ${suitEmoji[card.suit]}${card.value}، توقّعك خاطئ! خسرت الرهان.`, embeds: [], components: [] }).then(deleteMessageLater);
     }
 
@@ -1148,21 +1178,29 @@ client.on("interactionCreate", async i => {
     const card = drawUniqueCard(drawn);
     const win = card.suit === guessSuit;
 
-    if (win) {
-      const reward = bet * 20;
-      await addBalance(userId, reward);
-      await updateSoloStats(userId, "solocard", bet, true, reward);
-      rideBusGames.delete(userId);
-      return msg.edit({ content: `🏆 البطاقة كانت ${suitEmoji[card.suit]}${card.value}، وفزت بـ ${reward.toLocaleString()} ريال!`, embeds: [], components: [] }).then(deleteMessageLater);
-    } else {
-      rideBusGames.delete(userId);
-      return msg.edit({ content: `❌ البطاقة كانت ${suitEmoji[card.suit]}${card.value}، توقّعك خاطئ! خسرت الرهان.`, embeds: [], components: [] }).then(deleteMessageLater);
-    }
+if (win) {
+  const reward = bet * 20;
+  await updateBalanceWithLog(db, userId, reward - bet, "🃏 Ride the Bus - فوز");
+  await updateSoloStats(userId, "solobus", bet, true, reward);
+  rideBusGames.delete(userId);
+  return msg.edit({ content: `🏆 البطاقة كانت ${suitEmoji[card.suit]}${card.value}، وفزت بـ ${reward.toLocaleString()} ريال!`, embeds: [], components: [] }).then(deleteMessageLater);
+} else {
+const earned = 0;
+const net = earned - bet; // هذا = -bet
+await updateBalanceWithLog(db, userId, net, "🃏 Ride the Bus - خسارة");
+console.log("Transaction loss saved:", { userId, net, bet });
+await updateSoloStats(userId, "solobus", bet, false, earned);
+
+
+  rideBusGames.delete(userId);
+  return msg.edit({ content: `❌ البطاقة كانت ${suitEmoji[card.suit]}${card.value}، توقّعك خاطئ! خسرت الرهان.`, embeds: [], components: [] }).then(deleteMessageLater);
+}
   }
 });
 
-
+///////////////////////////////////*************                 
 // 🎴 Blackjack Solo - نسخة محسّنة ومتكاملة
+///////////////////////////////////*************                 
 
 function startBlackjackSolo(interaction, bet) {
   if (!interaction.replied && !interaction.deferred) interaction.deferUpdate().catch(() => {});
@@ -1223,18 +1261,29 @@ client.on("interactionCreate", async (i) => {
     const total = game.player.reduce((a, b) => a + b);
 
     if (total > 21) {
-    await updateSoloStats(id, "blackjack", "خسارة");
-    blackjackGames.delete(id);
-    return game.msg.edit({
+      await updateBalanceWithLog(db, id, -game.bet, "♠️ Blackjack - خسارة (تجاوز 21)");
+      await updateSoloStats(id, "blackjack", game.bet, false, 0);
+
+      blackjackGames.delete(id);
+      return game.msg.edit({
         embeds: [
-          new EmbedBuilder().setTitle("💥 خسرت!").setDescription(`مجموع بطاقاتك: **${total}** تجاوز 21.`).setColor(0xe74c3c)
+          new EmbedBuilder()
+            .setTitle("💥 خسرت!")
+            .setDescription(`مجموع بطاقاتك: **${total}** تجاوز 21.`)
+            .setColor(0xe74c3c)
         ],
         components: []
       });
     }
-    return game.msg.edit({ embeds: [
-      new EmbedBuilder().setTitle("🧠 بلاك جاك (ضد البوت)").setDescription(`بطاقاتك: ${game.player.join(" + ")} = **${total}**`).setColor(0x3498db)
-    ] });
+
+    return game.msg.edit({
+      embeds: [
+        new EmbedBuilder()
+          .setTitle("🧠 بلاك جاك (ضد البوت)")
+          .setDescription(`بطاقاتك: ${game.player.join(" + ")} = **${total}**`)
+          .setColor(0x3498db)
+      ]
+    });
   }
 
   if (i.customId === "bj_stand") {
@@ -1250,22 +1299,32 @@ client.on("interactionCreate", async (i) => {
     let color = 0x95a5a6;
 
     if (playerTotal > 21) {
+      await updateBalanceWithLog(db, id, -game.bet, "♠️ Blackjack - خسارة (تجاوز 21)");
+      await updateSoloStats(id, "blackjack", game.bet, false, 0);
+
       resultMsg = "💥 خسرت! تجاوزت 21.";
       color = 0xe74c3c;
     } else if (botTotal > 21 || playerTotal > botTotal) {
-      await addBalance(id, game.bet * 2);
-      resultMsg = `🏆 فزت!\nمجموعك: ${playerTotal} مقابل البوت: ${botTotal}\nربحت ${game.bet * 2} كاش`;
+      const reward = game.bet * 2;
+      await updateBalanceWithLog(db, id, reward - game.bet, "♠️ Blackjack - فوز");
+      await updateSoloStats(id, "blackjack", game.bet, true, reward);
+
+      resultMsg = `🏆 فزت!\nمجموعك: ${playerTotal} مقابل البوت: ${botTotal}\nربحت ${reward} كاش`;
       color = 0x2ecc71;
     } else if (playerTotal < botTotal) {
+      await updateBalanceWithLog(db, id, -game.bet, "♠️ Blackjack - خسارة");
+      await updateSoloStats(id, "blackjack", game.bet, false, 0);
+
       resultMsg = `😓 خسرت!\nمجموعك: ${playerTotal} مقابل البوت: ${botTotal}`;
       color = 0xe74c3c;
     } else {
-      await addBalance(id, game.bet);
+      await updateBalanceWithLog(db, id, 0, "♠️ Blackjack - تعادل");
+      await updateSoloStats(id, "blackjack", game.bet, false, game.bet);
+
       resultMsg = `🤝 تعادل! تم استرجاع الرهان.\n${playerTotal} ضد ${botTotal}`;
       color = 0xf1c40f;
     }
 
-    await updateSoloStats(id, "blackjack", playerTotal > 21 ? "خسارة" : (botTotal > 21 || playerTotal > botTotal ? "فوز" : playerTotal < botTotal ? "خسارة" : "تعادل"));
     blackjackGames.delete(id);
     embed.setDescription(resultMsg).setColor(color);
     const resultMessage = await game.msg.channel.send({ embeds: [embed] });
@@ -1273,7 +1332,6 @@ client.on("interactionCreate", async (i) => {
     return game.msg.delete().catch(() => {});
   }
 });
-
 
 // 🔫 باكشوت (ضد البوت) - نسخة مطورة بذكاء اصطناعي
 
@@ -1312,7 +1370,7 @@ function getRandomTools() {
   const items = ["مكبر", "منشار", "دواء", "بيرة", "أصفاد"];
   const tools = {};
   for (const item of items) {
-    tools[item] = Math.floor(Math.random() * 2); // 0 أو 1 عشوائياً
+    tools[item] = Math.floor(Math.random() * 2);
   }
   return tools;
 }
@@ -1320,7 +1378,7 @@ function getRandomTools() {
 function getBulletDeck() {
   let real = Math.floor(Math.random() * 8) + 1;
   let fake = Math.floor(Math.random() * 8) + 1;
-  while (Math.abs(real - fake) > 3) {
+  while (fake > real + 3) {
     real = Math.floor(Math.random() * 8) + 1;
     fake = Math.floor(Math.random() * 8) + 1;
   }
@@ -1336,7 +1394,7 @@ function sendBuckshotGameUI(interaction, userId, log = null) {
   const embed = new EmbedBuilder()
     .setTitle(isPlayerTurn ? `🎯 دورك يا ${game.username}` : "💀 دور البوت")
     .setDescription(
-      `**${game.username}**\n${"🖤".repeat(game.playerHearts)}\n\n🤖 البوت\n${"🖤".repeat(game.botHearts)}\n\n🔴 عدد الطلقات الحقيقية: ${game.deck.filter(b => b === "💥").length}\n⚪ عدد الطلقات الفارغة: ${game.deck.filter(b => b === "😌").length}` +
+      `**${game.username}**\n${"❤️".repeat(game.playerHearts)}\n\n🤖 البوت\n${"❤️".repeat(game.botHearts)}\n\n🔴 عدد الطلقات الحقيقية: ${game.deck.filter(b => b === "💥").length}\n⚪ عدد الطلقات الفارغة: ${game.deck.filter(b => b === "😌").length}` +
       (log ? `\n\n${log}` : "")
     )
     .setFooter({ text: "Buckshot Roulette" })
@@ -1344,7 +1402,7 @@ function sendBuckshotGameUI(interaction, userId, log = null) {
 
   const mainRow = new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId("buck_shoot_bot").setLabel("🔫 بوت").setStyle(ButtonStyle.Secondary).setDisabled(!isPlayerTurn),
-    new ButtonBuilder().setCustomId("buck_shoot_self").setLabel("🔫 نايل").setStyle(ButtonStyle.Secondary).setDisabled(!isPlayerTurn),
+    new ButtonBuilder().setCustomId("buck_shoot_self").setLabel("🔫 نفسك").setStyle(ButtonStyle.Secondary).setDisabled(!isPlayerTurn),
     new ButtonBuilder().setCustomId("buck_quit").setLabel("انسحب").setStyle(ButtonStyle.Secondary).setDisabled(!isPlayerTurn)
   );
 
@@ -1425,7 +1483,7 @@ client.on("interactionCreate", async (i) => {
   }
 
   if (["buck_shoot_self", "buck_shoot_bot"].includes(i.customId)) {
-    if (game.deck.length === 0) {
+    if (game.deck.filter(b => b === "💥").length === 0) {
       game.deck = getBulletDeck();
       grantRandomTools(game);
     }
@@ -1443,8 +1501,16 @@ client.on("interactionCreate", async (i) => {
       game[target] -= damage;
       game.buffs[targetBuff] = false;
       log += `طلقة حقيقية! (-${damage} ❤️)`;
+      game.turn = game.buffs.botCuffed ? "player" : "bot";
     } else {
       log += `طلقة فارغة.`;
+      if (isSelf) {
+        // يستمر الدور لنفس اللاعب فقط لو أطلق على نفسه وكانت فارغة
+        game.turn = "player";
+      } else {
+        // إذا أطلق على الخصم وكانت فارغة ينتقل الدور
+        game.turn = game.buffs.botCuffed ? "player" : "bot";
+      }
     }
 
     if ((game.playerHearts <= 3 || game.botHearts <= 3) && !game.gaveLowHpBonus) {
@@ -1453,26 +1519,32 @@ client.on("interactionCreate", async (i) => {
       log += `\n🎁 تم توزيع أدوات إضافية بسبب القلوب القليلة!`;
     }
 
-    if (game.playerHearts <= 0 || game.botHearts <= 0) {
-      const won = game.botHearts <= 0;
-      const resultEmbed = new EmbedBuilder()
-        .setTitle(won ? "🏆 فزت!" : "💀 خسرت!")
-        .setDescription(`${log}\n\n${won ? `ربحت ${(game.bet * 2).toLocaleString()} ريال` : `خسرت الرهان.`}`)
-        .setColor(won ? 0x2ecc71 : 0xe74c3c);
+if (game.playerHearts <= 0 || game.botHearts <= 0) {
+  const won = game.botHearts <= 0;
+  const resultEmbed = new EmbedBuilder()
+    .setTitle(won ? "🏆 فزت!" : "💀 خسرت!")
+    .setDescription(`${log}\n\n${won ? `ربحت ${(game.bet * 2).toLocaleString()} ريال` : `خسرت الرهان.`}`)
+    .setColor(won ? 0x2ecc71 : 0xe74c3c);
 
-      if (won) await addBalance(userId, game.bet * 2);
-      await updateSoloStats(userId, "buckshot", won ? "فوز" : "خسارة");
-      buckshotGames.delete(userId);
+  if (won) {
+    const reward = game.bet * 2;
+    await updateBalanceWithLog(db, userId, reward - game.bet, "🔫 Buckshot - فوز");
+    await updateSoloStats(userId, "buckshot", game.bet, true, reward);
+  } else {
+    await updateBalanceWithLog(db, userId, -game.bet, "🔫 Buckshot - خسارة");
+    await updateSoloStats(userId, "buckshot", game.bet, false, 0);
+  }
 
-      const resultMsg = await game.msg.channel.send({ embeds: [resultEmbed] });
-      setTimeout(() => resultMsg.delete().catch(() => {}), 60000);
-      return game.msg.delete().catch(() => {});
-    }
+  buckshotGames.delete(userId);
 
-    if (!game.buffs.botCuffed) {
-      game.turn = "bot";
+  const resultMsg = await game.msg.channel.send({ embeds: [resultEmbed] });
+  setTimeout(() => resultMsg.delete().catch(() => {}), 60000);
+  return game.msg.delete().catch(() => {});
+}
+
+    if (!game.buffs.botCuffed && game.turn === "bot") {
       setTimeout(() => botPlay(userId), 3000);
-    } else {
+    } else if (game.buffs.botCuffed) {
       game.buffs.botCuffed = false;
     }
 
@@ -1496,7 +1568,7 @@ function botPlay(userId) {
     game.buffs.playerCuffed = true;
   }
 
-  if (game.deck.length === 0) {
+  if (game.deck.filter(b => b === "💥").length === 0) {
     game.deck = getBulletDeck();
     grantRandomTools(game);
   }
@@ -1513,14 +1585,21 @@ function botPlay(userId) {
     game[target] -= damage;
     game.buffs.botDouble = false;
     log += `طلقة حقيقية! (-${damage} ❤️)`;
+    game.turn = "player";
   } else {
     log += `طلقة فارغة.`;
+    if (target === "botHearts") {
+      // إذا البوت أطلق على نفسه وكانت فارغة يكمل دوره
+      game.turn = "bot";
+      return setTimeout(() => botPlay(userId), 3000);
+    } else {
+      // إذا أطلق على الخصم وكانت فارغة ينتقل الدور للاعب
+      game.turn = "player";
+    }
   }
 
-  game.turn = "player";
   sendBuckshotGameUI(game.msg, userId, log);
 }
-
 
 // ✅ اللوبيات النشطة
 const activeLobbies = {};
@@ -2140,8 +2219,30 @@ async function finishGame(channelId) {
   for (const playerId in game.players) {
     const player = game.players[playerId];
     const total = calculateHandTotal(player.hand);
-    const status = total > 21 ? "❌ خسر (تجاوز 21)" : `✅ ${total}`;
     const handStr = player.hand.map(c => `${c.value}${c.suit}`).join(" ");
+
+    let status = "";
+    let logMsg = "";
+    let net = 0;
+
+    if (total > 21) {
+      status = "❌ خسر (تجاوز 21)";
+      net = -player.bet;
+      logMsg = "🃏 Blackjack جماعي - خسارة";
+    } else if (total === 21) {
+      status = "🏆 بلاك جاك!";
+      net = player.bet * 2;
+      logMsg = "🃏 Blackjack جماعي - فوز";
+    } else {
+      // 👇 مبدئياً: كل من لم يتجاوز 21 يعتبر فايز
+      status = `✅ ${total}`;
+      net = player.bet * 2;
+      logMsg = "🃏 Blackjack جماعي - فوز";
+    }
+
+    // ✅ تحديث كشف الحساب
+    await updateBalanceWithLog(db, playerId, net, logMsg);
+
     results.push(`👤 <@${playerId}> - يد: ${handStr} = ${status}`);
   }
 
@@ -2151,7 +2252,10 @@ async function finishGame(channelId) {
     .setColor(0x2ecc71);
 
   const channel = await client.channels.fetch(channelId);
-  await channel.send({ embeds: [embed] });
+  const resultMsg = await channel.send({ embeds: [embed] });
+
+  // 🗑️ حذف رسالة النتائج بعد 10 ثواني
+  setTimeout(() => resultMsg.delete().catch(() => {}), 10000);
 
   // حذف اللعبة من الذاكرة
   delete activeGames[channelId];
@@ -2327,7 +2431,7 @@ function handleColorWarInteraction(i) {
   i.deferUpdate();
 }
 
-function finishColorGame(channelId) {
+async function finishColorGame(channelId) {
   const game = colorWarGames[channelId];
   if (!game) return;
 
@@ -2348,38 +2452,27 @@ function finishColorGame(channelId) {
     }
   }
 
-
   const channel = client.channels.cache.get(channelId);
+  let resultMsg;
+
   if (winners.length === 1) {
-    channel.send(`🎉 انتهت اللعبة!
-🏆 الفائز: <@${winners[0].id}> بعدد ${highest} من الخانات.`);
+    resultMsg = await channel.send(`🎉 انتهت اللعبة!\n🏆 الفائز: <@${winners[0].id}> بعدد ${highest} من الخانات.`);
   } else {
     const mentionList = winners.map(p => `<@${p.id}>`).join(" و ");
-    channel.send(`🎉 انتهت اللعبة بالتعادل!
-🤝 الفائزون: ${mentionList} بعدد ${highest} من الخانات.`);
+    resultMsg = await channel.send(`🎉 انتهت اللعبة بالتعادل!\n🤝 الفائزون: ${mentionList} بعدد ${highest} من الخانات.`);
   }
 
-  // 🧠 حفظ الإحصائيات في MongoDB
-  game.players.forEach(async player => {
+  // 🧾 تحديث كشف الحساب
+  for (const player of game.players) {
     const didWin = winners.some(w => w.id === player.id);
     const earned = didWin ? player.bet * 2 : 0;
-    const lost = didWin ? 0 : player.bet;
+    const net = earned - player.bet;
 
-    await updateMultiplayerStats(player.id, "multi_colorwar", didWin, earned, lost);
+    await updateBalanceWithLog(db, player.id, net, didWin ? "🎯 Color War - فوز" : "🎯 Color War - خسارة");
+  }
 
-    await db.collection("multistats").updateOne(
-      { userId: player.id },
-      {
-        $set: { [`stats.multi_colorwar.lastPlayed`]: new Date() },
-        $inc: {
-          [`stats.multi_colorwar.totalGames`]: 1,
-          [`stats.multi_colorwar.${didWin ? "wins" : "loses"}`]: 1,
-          [`stats.multi_colorwar.net`]: earned - lost
-        }
-      },
-      { upsert: true }
-    );
-  });
+  // 🗑️ نحذف رسالة النتيجة بعد 15 ثانية
+  setTimeout(() => resultMsg.delete().catch(() => {}), 15000);
 
   endColorGame(channelId);
 }
@@ -2480,27 +2573,28 @@ async function updateTimeRoom(channelId) {
 
   const stillPlaying = game.players.filter(p => game.withdrawn[p.id] !== "left");
 
-  // 💥 انفجار
-  if (game.secondsElapsed === game.explosionTime) {
-    clearInterval(game.interval);
-    const losers = stillPlaying;
-    const channel = await client.channels.fetch(channelId);
-    const loserMentions = losers.map(p => `<@${p.id}>`).join(" و ");
+// 💥 انفجار
+if (game.secondsElapsed === game.explosionTime) {
+  clearInterval(game.interval);
+  const losers = stillPlaying;
+  const channel = await client.channels.fetch(channelId);
+  const loserMentions = losers.map(p => `<@${p.id}>`).join(" و ");
 
-    await game.message.edit({
-      content: `💥 **انفجرت الغرفة بعد ${game.secondsElapsed} ثانية!**\nالخاسرون: ${loserMentions}`,
-      embeds: [],
-      components: []
-    });
+  const resultMsg = await game.message.edit({
+    content: `💥 **انفجرت الغرفة بعد ${game.secondsElapsed} ثانية!**\nالخاسرون: ${loserMentions}`,
+    embeds: [],
+    components: []
+  });
 
-    for (const loser of losers) {
-      await updateMultiplayerStats(loser.id, "multi_time", false, 0, loser.bet);
-    }
-
-    delete timeRoomGames[channelId];
-    return;
+  for (const loser of losers) {
+    await updateBalanceWithLog(db, loser.id, -loser.bet, "💣 Time Room - خسارة");
+    await updateMultiplayerStats(loser.id, "multi_time", false, 0, loser.bet);
   }
 
+  setTimeout(() => resultMsg.delete().catch(() => {}), 15000);
+  delete timeRoomGames[channelId];
+  return;
+}
   // 🪙 نقاط تشجيعية
   let checkpointText = "";
   if (game.secondsElapsed % 5 === 0) {
@@ -2526,7 +2620,7 @@ async function updateTimeRoom(channelId) {
 }
 
 // ✅ معالجة زر الانسحاب داخل الحدث العام
-function handleTimeRoomWithdraw(i) {
+async function handleTimeRoomWithdraw(i) {
   const channelId = i.channel.id;
   const game = timeRoomGames[channelId];
   if (!game) return;
@@ -2545,23 +2639,25 @@ function handleTimeRoomWithdraw(i) {
   const checkpoint = game.withdrawn[userId]?.multiplier || game.lastCheckpoint || 1.5;
   const earned = Math.floor(player.bet * checkpoint);
 
-  addBalance(userId, earned);
-  updateMultiplayerStats(userId, "multi_time", true, earned, 0);
+  // ✅ تحديث الرصيد مع كشف الحساب
+  await updateBalanceWithLog(db, userId, earned - player.bet, `💣 Time Room - انسحاب ناجح`);
+  await updateMultiplayerStats(userId, "multi_time", true, earned, 0);
 
   game.withdrawn[userId] = "left";
 
   const stillPlaying = game.players.filter(p => game.withdrawn[p.id] !== "left");
   if (stillPlaying.length === 0) {
-    game.message.edit({
+    const endMsg = await game.message.edit({
       content: `✅ انسحب جميع اللاعبين بنجاح قبل الانفجار!\nاللعبة انتهت.`,
       embeds: [],
       components: []
     });
+    setTimeout(() => endMsg.delete().catch(() => {}), 60000);
     delete timeRoomGames[channelId];
     return;
   }
 
-  i.reply({ content: `✅ انسحبت بنجاح! ربحت ${earned.toLocaleString()} 💰`, ephemeral: true });
+  await i.reply({ content: `✅ انسحبت بنجاح! ربحت ${earned.toLocaleString()} 💰`, ephemeral: true });
   game.interval = setInterval(() => updateTimeRoom(channelId), 1000);
 }
 /******************************************
@@ -2682,18 +2778,28 @@ async function startMultiplayerBuckshot(channelId) {
       }
     }
 
-    if (target.health <= 0) {
-      await updateMultiplayerStats(current.id, "multi_buckshot", true, current.bet * 2, 0);
-      await updateMultiplayerStats(other.id, "multi_buckshot", false, 0, other.bet);
-      await game.gameMessage.edit({
-        content: `💀 <@${target.id}> مات! الفائز هو <@${current.id}> 🎉`,
-        embeds: [],
-        components: []
-      });
-      delete buckshotMultiplayerGames[channelId];
-      collector.stop();
-      return;
-    }
+if (target.health <= 0) {
+  // ✅ تحديث كشف الحساب
+  await updateBalanceWithLog(db, current.id, current.bet, "🔫 Buckshot Multiplayer - فوز");
+  await updateBalanceWithLog(db, other.id, -other.bet, "🔫 Buckshot Multiplayer - خسارة");
+
+  // ✅ تحديث الإحصائيات
+  await updateMultiplayerStats(current.id, "multi_buckshot", true, current.bet * 2, 0);
+  await updateMultiplayerStats(other.id, "multi_buckshot", false, 0, other.bet);
+
+  const resultMsg = await game.gameMessage.edit({
+    content: `💀 <@${target.id}> مات! الفائز هو <@${current.id}> 🎉`,
+    embeds: [],
+    components: []
+  });
+
+  // 🗑️ حذف الرسالة بعد دقيقة
+  setTimeout(() => resultMsg.delete().catch(() => {}), 60000);
+
+  delete buckshotMultiplayerGames[channelId];
+  collector.stop();
+  return;
+}
 
     const enemyCuffed = game.activeEffects.cuffed === other.id;
     delete game.activeEffects.cuffed;
@@ -2760,13 +2866,22 @@ async function renderMultiplayerBuckshot(channelId) {
     new ButtonBuilder().setCustomId("buckshot_enemy").setLabel("🔫 اطلق على الخصم").setStyle(ButtonStyle.Danger)
   );
 
-  const row2 = new ActionRowBuilder().addComponents(
-    buckshotMultiItemsList.map(t => new ButtonBuilder()
-      .setCustomId(`buckshot_use_${t}`)
-      .setLabel(`${t} (${current.items[t] || 0})`)
-      .setStyle(ButtonStyle.Secondary)
-      .setDisabled((current.items[t] || 0) <= 0))
-  );
+// ✅ جدول تحويل الاسم الإنجليزي إلى عربي للعرض فقط
+const buckshotItemLabels = {
+  beer: "🍺 بيرة",
+  scope: "🕵️‍♂️ مكبر",
+  saw: "🪚 منشار",
+  pills: "💊 دواء",
+  cuffs: "🔒 أصفاد"
+};
+
+const row2 = new ActionRowBuilder().addComponents(
+  buckshotMultiItemsList.map(t => new ButtonBuilder()
+    .setCustomId(`buckshot_use_${t}`) // ⚠️ يبقى بالإنجليزي
+    .setLabel(`${buckshotItemLabels[t]} (${current.items[t] || 0})`)
+    .setStyle(ButtonStyle.Secondary)
+    .setDisabled((current.items[t] || 0) <= 0))
+);
 
   const channel = await client.channels.fetch(channelId);
   if (!game.gameMessage) {
@@ -3435,6 +3550,7 @@ GlobalFonts.registerFromPath(
   path.join(__dirname, "assets/fonts/Cairo-Regular.ttf"),
   "Cairo"
 );
+
  
 
 });
