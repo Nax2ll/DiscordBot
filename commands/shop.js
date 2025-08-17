@@ -14,7 +14,6 @@ module.exports = async function handleShopCommand(message) {
     .addOptions([
       { label: '🧢 الرولات', value: 'section_roles' },
       { label: '🚔 السجن', value: 'section_jail' },
-      { label: '🎰 القمار', value: 'section_gambling' },
       { label: '⚠️ العقوبات', value: 'section_punishments' }
     ]);
 
