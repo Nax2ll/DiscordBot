@@ -27,8 +27,9 @@ require('dotenv').config();
 const { GlobalFonts } = require("@napi-rs/canvas");
 const path = require("path");
 
+// سجل Cairo-Regular باسم "Cairo" (يكفي مره وحده فقط)
 GlobalFonts.registerFromPath(
-  path.join(__dirname, "assets/fonts/Cairo.ttf"),
+  path.join(__dirname, "assets/fonts/Cairo-Regular.ttf"),
   "Cairo"
 );
 
