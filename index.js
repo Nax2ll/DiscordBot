@@ -32,6 +32,7 @@ GlobalFonts.registerFromPath(
   path.join(__dirname, "assets/fonts/Cairo-Regular.ttf"),
   "Cairo"
 );
+console.log("✅ الخطوط المسجلة:", GlobalFonts.families);
 
 /******************************************
  * 2)        الاتصال بـ MongoDB          *
