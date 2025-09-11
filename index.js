@@ -2486,7 +2486,7 @@ async function sendBuckshotGameUI(interactionOrMessage, userId, log = null) {
     const icon = assets[key];
     if (icon) ctx.drawImage(icon, x, y, 40, 40);
     ctx.fillStyle = "white";
-    ctx.font = "17px Cairo";
+    ctx.font = "17px PressStart2P";
     ctx.fillText(`x${count}`, x + 45, y + 30);
   }
 
@@ -2519,7 +2519,7 @@ async function sendBuckshotGameUI(interactionOrMessage, userId, log = null) {
   // السجل
   if (log) {
     ctx.fillStyle = "white";
-    ctx.font = "50px Cairo";
+  ctx.font = "bold 50px Cairo";
     ctx.fillText(log, 100, 75);
   }
 
@@ -3647,7 +3647,7 @@ async function finishGameMulti(channelId) {
     else { ctx.fillStyle = "#333"; ctx.fillRect(0, 0, canvas.width, canvas.height); }
 
     ctx.fillStyle = "white";
-    ctx.font = "bold 50px Arial";
+  ctx.font = "bold 50px Cairo";
     ctx.textAlign = "center";
     ctx.fillText(" تعادل!", canvas.width / 2, 100);
 
@@ -4582,7 +4582,7 @@ async function renderMultiplayerBuckshot(channelId) {
     ctx.drawImage(icon, x, y, 40, 40);
 
     ctx.fillStyle = "white";
-    ctx.font = "17px Arial center";
+  ctx.font = "bold 17px Cairo";
     ctx.fillText(`x${count}`, x + 45, y + 30);
   }
 
@@ -4612,7 +4612,7 @@ async function renderMultiplayerBuckshot(channelId) {
   // سجل الأحداث
   if (game.log) {
     ctx.fillStyle = "white";
-    ctx.font = "50px Arial center";
+  ctx.font = "bold 50px Cairo";
     ctx.fillText(game.log, 120, 75);
   }
 
@@ -5667,9 +5667,9 @@ async function handleTransferMessage(msg) {
   drawCircularImage(ctx, senderAvatar, 330, 237, 160);
   drawCircularImage(ctx, receiverAvatar, 1320, 237, 160);
   drawText(ctx, `${amount.toLocaleString("en-US")}`, 850, 430, "115px");
-  drawText(ctx, `${nickname}`, 850, 530, "75px Arial", "#b0d4eb", "center");
-  drawText(ctx, `${mention.id}`, 850, 600, "25px Arial", "#b0d4eb", "center");
-  drawText(ctx, `${msg.author.id}`, 140, 1050, "35px Arial", "#b0d4eb", "left");
+  drawText(ctx, `${nickname}`, 850, 530, "75px Cairo", "#b0d4eb", "center");
+  drawText(ctx, `${mention.id}`, 850, 600, "25px Cairo", "#b0d4eb", "center");
+  drawText(ctx, `${msg.author.id}`, 140, 1050, "35px c", "#b0d4eb", "left");
 
   const buffer = await canvas.encode("png");
   return await msg.reply({ files: [{ attachment: buffer, name: "transfer.png" }] });
