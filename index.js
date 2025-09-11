@@ -2175,13 +2175,13 @@ async function renderBlackjack(game, user) {
 
   // النصوص (نفس الستايل)
   ctx.fillStyle = "white";
-  ctx.font = "bold 40px Cairo";
+  ctx.font = "bold 40px pressstart2p";
   ctx.textAlign = "center";
 
   // 📝 مجموع اللاعب
-  ctx.fillText(`مجموعك: ${playerTotal}`, 110, 375);
+  ctx.fillText(`مجموعك: ${playerTotal}`, 100, 375);
   // 📝 مجموع البوت
-  ctx.fillText(`البوت:  ${botTotal}`, 110, 850);
+  ctx.fillText(`البوت:  ${botTotal}`, 100, 850);
 
   return canvas.toBuffer("image/png");
 }
@@ -2519,7 +2519,7 @@ async function sendBuckshotGameUI(interactionOrMessage, userId, log = null) {
   // السجل
   if (log) {
     ctx.fillStyle = "white";
-    ctx.font = "50px Cairo";
+    ctx.font = "50px Arial";
     ctx.fillText(log, 100, 75);
   }
 
@@ -3647,7 +3647,7 @@ async function finishGameMulti(channelId) {
     else { ctx.fillStyle = "#333"; ctx.fillRect(0, 0, canvas.width, canvas.height); }
 
     ctx.fillStyle = "white";
-    ctx.font = "bold 50px Cairo";
+    ctx.font = "bold 50px Arial";
     ctx.textAlign = "center";
     ctx.fillText(" تعادل!", canvas.width / 2, 100);
 
@@ -4103,7 +4103,7 @@ async function renderTimeRoom(game, isFinal = false) {
       const player = game.players.find(p => p.id === id);
       return { username: player?.username || id, earned: data.earned };
     });
-  ctx.font = "Bold 30px Cairo";
+  ctx.font = "Bold 30px Arabic";
   ctx.fillStyle = "#8FD6FF";
   ctx.textAlign = "left";
   ctx.fillText("الفائزين:", 100, 510);
@@ -4114,7 +4114,7 @@ async function renderTimeRoom(game, isFinal = false) {
   // الخاسرين عند النهاية فقط
   if (isFinal) {
     const losers = game.players.filter(p => !game.withdrawn[p.id] || game.withdrawn[p.id].status !== "left");
-    ctx.font = "Bold 30px Cairo";
+    ctx.font = "Bold 30px Arabic";
     ctx.fillStyle = "#8FD6FF";
     ctx.textAlign = "right";
     ctx.fillText("الخاسرين:", canvas.width - 550, 510);
@@ -4582,7 +4582,7 @@ async function renderMultiplayerBuckshot(channelId) {
     ctx.drawImage(icon, x, y, 40, 40);
 
     ctx.fillStyle = "white";
-    ctx.font = "17px Cairo center";
+    ctx.font = "17px Arial center";
     ctx.fillText(`x${count}`, x + 45, y + 30);
   }
 
@@ -4612,7 +4612,7 @@ async function renderMultiplayerBuckshot(channelId) {
   // سجل الأحداث
   if (game.log) {
     ctx.fillStyle = "white";
-    ctx.font = "50px Cairo center";
+    ctx.font = "50px Arial center";
     ctx.fillText(game.log, 120, 75);
   }
 
