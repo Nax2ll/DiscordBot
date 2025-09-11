@@ -2175,7 +2175,7 @@ async function renderBlackjack(game, user) {
 
   // النصوص (نفس الستايل)
   ctx.fillStyle = "white";
-  ctx.font = "bold 40px pressstart2p";
+  ctx.font = "bold 40px Cairo";
   ctx.textAlign = "center";
 
   // 📝 مجموع اللاعب
