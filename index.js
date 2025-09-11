@@ -4582,7 +4582,7 @@ async function renderMultiplayerBuckshot(channelId) {
     ctx.drawImage(icon, x, y, 40, 40);
 
     ctx.fillStyle = "white";
-  ctx.font = "bold 17px Cairo";
+  ctx.font = "17px Cairo";
     ctx.fillText(`x${count}`, x + 45, y + 30);
   }
 
@@ -4612,7 +4612,7 @@ async function renderMultiplayerBuckshot(channelId) {
   // سجل الأحداث
   if (game.log) {
     ctx.fillStyle = "white";
-  ctx.font = "bold 50px Cairo";
+  ctx.font = "50px Cairo";
     ctx.fillText(game.log, 120, 75);
   }
 
