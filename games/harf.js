@@ -20,6 +20,7 @@ function startHarfGame(channelId) {
     votes: null,
   };
 }
+
 async function showHarfLobby(channel) {
   const game = activeHarfGames[channel.id];
   if (!game) return;
@@ -35,14 +36,15 @@ ${game.players.length > 0 ? game.players.map(p => `• <@${p.id}>`).join("\n") :
     .setColor("#f1c40f");
 
   const row = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId("harf_join").setLabel("✅ انضمام").setStyle(ButtonStyle.Success),
-    new ButtonBuilder().setCustomId("harf_leave").setLabel("🚪 انسحاب").setStyle(ButtonStyle.Danger),
-    new ButtonBuilder().setCustomId("harf_start").setLabel("🎮 ابدأ اللعبة").setStyle(ButtonStyle.Primary)
+    new ButtonBuilder().setCustomId("harf_join").setLabel(" انضمام").setStyle(ButtonStyle.Secondary).setEmoji("1408077902859472966"),
+    new ButtonBuilder().setCustomId("harf_leave").setLabel(" انسحاب").setStyle(ButtonStyle.Secondary).setEmoji("1408077754557136926"),
+    new ButtonBuilder().setCustomId("harf_start").setLabel("ابدأ ").setStyle(ButtonStyle.Secondary).setEmoji("1408080743971950653")
   );
 
   const sent = await channel.send({ embeds: [embed], components: [row] });
   game.messageId = sent.id;
 }
+
 async function handleHarfLobbyInteraction(interaction) {
   const game = activeHarfGames[interaction.channel.id];
   if (!game || game.state !== "lobby") return;
@@ -52,11 +54,11 @@ async function handleHarfLobbyInteraction(interaction) {
   if (interaction.customId === "harf_join") {
     const alreadyJoined = game.players.find(p => p.id === userId);
     if (alreadyJoined) {
-      return interaction.reply({ content: "❌ أنت بالفعل في اللوبي.", ephemeral: true });
+      return interaction.reply({ content: "<:icons8wrong100:1407439999611310130> أنت بالفعل في اللوبي.", ephemeral: true });
     }
 
     if (game.players.length >= 4) {
-      return interaction.reply({ content: "❌ اللوبي ممتلئ.", ephemeral: true });
+      return interaction.reply({ content: "<:icons8wrong100:1407439999611310130> اللوبي ممتلئ.", ephemeral: true });
     }
 
     game.players.push({ id: userId, username: interaction.user.username });
@@ -68,7 +70,7 @@ async function handleHarfLobbyInteraction(interaction) {
   if (interaction.customId === "harf_leave") {
     const index = game.players.findIndex(p => p.id === userId);
     if (index === -1) {
-      return interaction.reply({ content: "❌ أنت لست في اللوبي.", ephemeral: true });
+      return interaction.reply({ content: "<:icons8wrong100:1407439999611310130> أنت لست في اللوبي.", ephemeral: true });
     }
 
     game.players.splice(index, 1);
@@ -82,18 +84,19 @@ async function handleHarfLobbyInteraction(interaction) {
   }
 
   if (interaction.customId === "harf_start") {
-    if (userId !== game.hostId) {
-      return interaction.reply({ content: "❌ فقط صاحب اللوبي يمكنه بدء اللعبة.", ephemeral: true });
-    }
-
+    // السماح لأي لاعب بالبدء طالما العدد بين [2..4]
     if (game.players.length < 2) {
-      return interaction.reply({ content: "❌ تحتاج على الأقل إلى لاعبين.", ephemeral: true });
+      return interaction.reply({ content: "<:icons8wrong100:1407439999611310130> تحتاج على الأقل إلى لاعبين.", ephemeral: true });
+    }
+    if (game.players.length > 4) {
+      return interaction.reply({ content: "<:icons8wrong100:1407439999611310130> الحد الأقصى 4 لاعبين.", ephemeral: true });
     }
 
     game.state = "playing";
     return startHarfMatch(interaction.channel);
   }
 }
+
 async function updateHarfLobbyMessage(interaction) {
   const game = activeHarfGames[interaction.channel.id];
   if (!game) return;
@@ -107,14 +110,15 @@ ${game.players.length > 0 ? game.players.map(p => `• <@${p.id}>`).join("\n") :
     .setColor("#f1c40f");
 
   const row = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId("harf_join").setLabel("✅ انضمام").setStyle(ButtonStyle.Success),
-    new ButtonBuilder().setCustomId("harf_leave").setLabel("🚪 انسحاب").setStyle(ButtonStyle.Danger),
-    new ButtonBuilder().setCustomId("harf_start").setLabel("🎮 ابدأ اللعبة").setStyle(ButtonStyle.Primary)
+    new ButtonBuilder().setCustomId("harf_join").setLabel("انضمام").setStyle(ButtonStyle.Secondary).setEmoji("1408077902859472966"),
+    new ButtonBuilder().setCustomId("harf_leave").setLabel("انسحاب").setStyle(ButtonStyle.Secondary).setEmoji("1408077754557136926"),
+    new ButtonBuilder().setCustomId("harf_start").setLabel("ابدأ").setStyle(ButtonStyle.Secondary).setEmoji("1408080743971950653")
   );
 
   const msg = await interaction.channel.messages.fetch(game.messageId).catch(() => null);
   if (msg) await msg.edit({ embeds: [embed], components: [row] });
 }
+
 function getRandomArabicLetter() {
   const letters = "ابتثجحخدذرزسشصضطظعغفقكلمنهوي";
   return letters[Math.floor(Math.random() * letters.length)];
@@ -146,7 +150,8 @@ async function startHarfMatch(channel) {
     game.playerHands[p.id] = generatePlayerHand();
   });
 
-  game.turn = 0;
+  // اختيار الدور الأول عشوائياً
+  game.turn = Math.floor(Math.random() * game.players.length);
   game.round = 1;
 
   // حذف رسالة اللوبي
@@ -155,6 +160,7 @@ async function startHarfMatch(channel) {
 
   await showHarfTurn(channel);
 }
+
 async function showHarfTurn(channel) {
   const game = activeHarfGames[channel.id];
   if (!game) return;
@@ -163,22 +169,24 @@ async function showHarfTurn(channel) {
   const currentId = currentPlayer.id;
   const baseLetters = game.letters;
 
+  // أزرار الحروف الأساسية بالعكس (عرض فقط) مع الحفاظ على الفهارس كما هي
   const baseRow = new ActionRowBuilder();
-  baseLetters.forEach((letter, i) => {
+  for (let i = baseLetters.length - 1; i >= 0; i--) {
     baseRow.addComponents(
       new ButtonBuilder()
         .setCustomId(`harf_base_${i}`)
-        .setLabel(letter)
+        .setLabel(baseLetters[i])
         .setStyle(ButtonStyle.Primary)
         .setDisabled(true)
     );
-  });
+  }
 
   baseRow.addComponents(
     new ButtonBuilder()
       .setCustomId("harf_quit")
-      .setLabel("🚪 انسحاب")
+      .setLabel("انسحاب")
       .setStyle(ButtonStyle.Danger)
+      .setEmoji("1408077754557136926")
   );
 
   const playerHand = game.playerHands[currentId] || [];
@@ -187,13 +195,13 @@ async function showHarfTurn(channel) {
   for (let i = 0; i < playerHand.length; i += 5) {
     const slice = playerHand.slice(i, i + 5);
     const row = new ActionRowBuilder();
-    slice.forEach((letter, idx) => {
+    slice.forEach((letter) => {
       row.addComponents(
         new ButtonBuilder()
           .setCustomId(`harf_play_${letter}`)
           .setLabel(letter)
           .setStyle(ButtonStyle.Secondary)
-          .setDisabled(false) // التحكم هيكون في الضغط لاحقًا
+          .setDisabled(false)
       );
     });
     handRows.push(row);
@@ -222,6 +230,7 @@ async function showHarfTurn(channel) {
     handleHarfTimeout(channel);
   }, 60 * 1000);
 }
+
 const fs = require("fs");
 const path = require("path");
 
@@ -231,29 +240,35 @@ async function handleHarfInteraction(interaction) {
   const game = activeHarfGames[interaction.channel.id];
   if (!game || game.state !== "playing") return;
 
+  // السماح لأزرار التصويت بالمرور بدون رسالة "ليس دورك!"
+  if (interaction.customId.startsWith("harf_vote_")) {
+    return; // سيُعالج من handleVote
+  }
+
   const userId = interaction.user.id;
   const currentPlayer = game.players[game.turn];
   if (userId !== currentPlayer.id) {
-    return interaction.reply({ content: "❌ ليس دورك!", ephemeral: true });
+    return interaction.reply({ content: "<:icons8wrong100:1407439999611310130> ليس دورك!", ephemeral: true });
   }
 
   // الضغط على حرف من اليد
   if (interaction.customId.startsWith("harf_play_")) {
     const letter = interaction.customId.split("_")[2];
     game.selection = letter;
-  const msg = await interaction.channel.messages.fetch(game.messageId).catch(() => null);
+    const msg = await interaction.channel.messages.fetch(game.messageId).catch(() => null);
 
     if (msg) {
+      // عند اختيار حرف اليد، فعّل الحروف الأساسية (بعكس العرض أيضاً)
       const baseRow = new ActionRowBuilder();
-      game.letters.forEach((letter, i) => {
+      for (let i = game.letters.length - 1; i >= 0; i--) {
         baseRow.addComponents(
           new ButtonBuilder()
             .setCustomId(`harf_base_${i}`)
-            .setLabel(letter)
+            .setLabel(game.letters[i])
             .setStyle(ButtonStyle.Primary)
             .setDisabled(false)
         );
-      });
+      }
 
       const playerHand = game.playerHands[userId] || [];
       const handRows = [];
@@ -275,15 +290,13 @@ async function handleHarfInteraction(interaction) {
       await msg.edit({ components: [baseRow, ...handRows] });
     }
 
-    return interaction.reply({ content: `✅ اخترت الحرف **${letter}**، الآن اختر أي حرف أساسي لتبديله.`, ephemeral: true });
-  
+    return interaction.reply({ content: `<:icons8correct1001:1407440011183259699> اخترت الحرف **${letter}**، الآن اختر أي حرف أساسي لتبديله.`, ephemeral: true });
   }
 
   // زر الانسحاب أثناء اللعب
   if (interaction.customId === "harf_quit") {
     game.players = game.players.filter(p => p.id !== userId);
     delete game.playerHands[userId];
-
     if (game.players.length === 1) {
       const winner = game.players[0];
       delete activeHarfGames[interaction.channel.id];
@@ -300,7 +313,7 @@ async function handleHarfInteraction(interaction) {
   // الضغط على حرف أساسي لتبديله
   if (interaction.customId.startsWith("harf_base_")) {
     if (!game.selection) {
-      return interaction.reply({ content: "❌ اختر حرف من حروفك أولًا.", ephemeral: true });
+      return interaction.reply({ content: "<:icons8wrong100:1407439999611310130> اختر حرف من حروفك أولًا.", ephemeral: true });
     }
 
     const baseIndex = parseInt(interaction.customId.split("_")[2]);
@@ -312,12 +325,12 @@ async function handleHarfInteraction(interaction) {
 
     const hand = game.playerHands[userId];
     const handIndex = hand.indexOf(newLetter);
-    if (handIndex === -1) return interaction.reply({ content: "❌ حدث خطأ، الحرف غير موجود في يدك.", ephemeral: true });
+    if (handIndex === -1) return interaction.reply({ content: "<:icons8wrong100:1407439999611310130> حدث خطأ، الحرف غير موجود في يدك.", ephemeral: true });
 
     game.selection = null;
 
     if (dictionary.has(word)) {
-      // ✅ الكلمة موجودة
+      // <:icons8correct1001:1407440011183259699> الكلمة موجودة
       game.letters[baseIndex] = newLetter;
       hand.splice(handIndex, 1); // نحذف الحرف من يد اللاعب
 
@@ -341,6 +354,7 @@ async function handleHarfInteraction(interaction) {
     }
   }
 }
+
 async function startVotingOnInvalidWord(interaction, word, baseIndex, newLetter) {
   const game = activeHarfGames[interaction.channel.id];
   if (!game) return;
@@ -364,15 +378,15 @@ async function startVotingOnInvalidWord(interaction, word, baseIndex, newLetter)
     .setTitle("📋 تصويت على الكلمة")
     .setDescription(`🗳️ <@${userId}> اقترح الكلمة: **${word}**
 
-✅ إذا كانت الكلمة منطقية وافقوا عليها.
-❌ إذا لا، ارفضوها.
+<:icons8correct1001:1407440011183259699> إذا كانت الكلمة منطقية وافقوا عليها.
+<:icons8wrong100:1407439999611310130> إذا لا، ارفضوها.
 
 عدد المصوتين: ${voters.length}`)
     .setColor("#e67e22");
 
   const row = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId("harf_vote_yes").setLabel("✅ أوافق").setStyle(ButtonStyle.Success),
-    new ButtonBuilder().setCustomId("harf_vote_no").setLabel("❌ أرفض").setStyle(ButtonStyle.Danger)
+    new ButtonBuilder().setCustomId("harf_vote_yes").setLabel(" اوافق").setStyle(ButtonStyle.Success).setEmoji("1407440011183259699"),
+    new ButtonBuilder().setCustomId("harf_vote_no").setLabel(" أرفض").setStyle(ButtonStyle.Danger).setEmoji("1407439999611310130")
   );
 
   const msg = await interaction.channel.send({ embeds: [embed], components: [row] });
@@ -389,11 +403,11 @@ async function handleVote(interaction) {
   const userId = interaction.user.id;
 
   if (userId === voteData.by) {
-    return interaction.reply({ content: "❌ لا يمكنك التصويت على كلمتك.", ephemeral: true });
+    return interaction.reply({ content: "<:icons8wrong100:1407439999611310130> لا يمكنك التصويت على كلمتك.", ephemeral: true });
   }
 
   if (voteData.votes[userId]) {
-    return interaction.reply({ content: "❌ لقد صوتت مسبقًا.", ephemeral: true });
+    return interaction.reply({ content: "<:icons8wrong100:1407439999611310130> لقد صوتت مسبقًا.", ephemeral: true });
   }
 
   const value = interaction.customId === "harf_vote_yes" ? "yes" : "no";
@@ -421,8 +435,8 @@ async function finishVote(channel) {
   const hand = game.playerHands[by];
 
   const resultMessage = yes > no
-    ? `✅ تم قبول الكلمة بأغلبية (${yes} مقابل ${no})`
-    : `❌ تم رفض الكلمة (${yes} مقابل ${no})`;
+    ? `<:icons8correct1001:1407440011183259699> تم قبول الكلمة بأغلبية (${yes} مقابل ${no})`
+    : `<:icons8wrong100:1407439999611310130> تم رفض الكلمة (${yes} مقابل ${no})`;
 
   const resultMsg = await channel.send(resultMessage);
   setTimeout(() => resultMsg.delete().catch(() => {}), 5000);
@@ -455,6 +469,7 @@ async function finishVote(channel) {
 
   return showHarfTurn(channel);
 }
+
 async function handleHarfTimeout(channel) {
   const game = activeHarfGames[channel.id];
   if (!game || game.state !== "playing") return;
@@ -463,12 +478,13 @@ async function handleHarfTimeout(channel) {
   const hand = game.playerHands[current.id];
   const newLetter = getRandomArabicLetter();
 
-if (!hand.includes(newLetter) && hand.length < 12) {
-  hand.push(newLetter);
-  await channel.send(`⏰ <@${current.id}> انتهى وقته! تم إضافة حرف عشوائي (${newLetter})`);
-} else if (hand.length >= 12) {
-  await channel.send(`❗ <@${current.id}> وصل الحد الأقصى من الحروف. تم تجاوز الدور بدون إضافة حرف.`);
-}
+  if (!hand.includes(newLetter) && hand.length < 12) {
+    hand.push(newLetter);
+    await channel.send(`⏰ <@${current.id}> انتهى وقته! تم إضافة حرف عشوائي (${newLetter})`);
+  } else if (hand.length >= 12) {
+    await channel.send(`❗ <@${current.id}> وصل الحد الأقصى من الحروف. تم تجاوز الدور بدون إضافة حرف.`);
+  }
+
   // حذف رسالة الدور السابق
   const msg = await channel.messages.fetch(game.messageId).catch(() => null);
   if (msg) await msg.delete().catch(() => {});
@@ -476,6 +492,7 @@ if (!hand.includes(newLetter) && hand.length < 12) {
   game.turn = (game.turn + 1) % game.players.length;
   return showHarfTurn(channel);
 }
+
 module.exports = {
   startHarfGame,
   showHarfLobby,
