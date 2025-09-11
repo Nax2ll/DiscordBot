@@ -4582,7 +4582,7 @@ async function renderMultiplayerBuckshot(channelId) {
     ctx.drawImage(icon, x, y, 40, 40);
 
     ctx.fillStyle = "white";
-  ctx.font = "17px Cairo";
+  ctx.font = " 17px Cairo";
     ctx.fillText(`x${count}`, x + 45, y + 30);
   }
 
