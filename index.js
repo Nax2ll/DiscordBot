@@ -2173,18 +2173,19 @@ async function renderBlackjack(game, user) {
   const playerTotal = calcHand(game.player);
   let botTotal = calcHand(game.bot);
 
-  // النصوص (نفس الستايل)
+   // النصوص (نفس الستايل)
   ctx.fillStyle = "white";
-  ctx.font = "bold 40px Cairo";
+  ctx.font = "bold 40px PressStart2P";
   ctx.textAlign = "center";
 
   // 📝 مجموع اللاعب
-  ctx.fillText(`مجموعك: ${playerTotal}`, 100, 375);
+  ctx.fillText(`You: ${playerTotal}`, 100, 375);
   // 📝 مجموع البوت
-  ctx.fillText(`البوت:  ${botTotal}`, 100, 850);
+  ctx.fillText(`Bot:  ${botTotal}`, 100, 850);
 
   return canvas.toBuffer("image/png");
 }
+
 
 // 📤 إرسال الرسالة الأولى
 async function sendBlackjackMessage(channel, game, user) {
