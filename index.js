@@ -2175,7 +2175,7 @@ async function renderBlackjack(game, user) {
 
   // النصوص (نفس الستايل)
   ctx.fillStyle = "white";
-  ctx.font = "bold 40px pressstart2p";
+  ctx.font = "bold 40px Cairo";
   ctx.textAlign = "center";
 
   // 📝 مجموع اللاعب
@@ -2486,7 +2486,7 @@ async function sendBuckshotGameUI(interactionOrMessage, userId, log = null) {
     const icon = assets[key];
     if (icon) ctx.drawImage(icon, x, y, 40, 40);
     ctx.fillStyle = "white";
-    ctx.font = "17px PressStart2P";
+    ctx.font = "17px Cairo";
     ctx.fillText(`x${count}`, x + 45, y + 30);
   }
 
@@ -2519,7 +2519,7 @@ async function sendBuckshotGameUI(interactionOrMessage, userId, log = null) {
   // السجل
   if (log) {
     ctx.fillStyle = "white";
-    ctx.font = "50px Arial";
+    ctx.font = "50px Cairo";
     ctx.fillText(log, 100, 75);
   }
 
@@ -4582,7 +4582,7 @@ async function renderMultiplayerBuckshot(channelId) {
     ctx.drawImage(icon, x, y, 40, 40);
 
     ctx.fillStyle = "white";
-    ctx.font = "17px Arial center";
+    ctx.font = "17px Cairo center";
     ctx.fillText(`x${count}`, x + 45, y + 30);
   }
 
@@ -4612,7 +4612,7 @@ async function renderMultiplayerBuckshot(channelId) {
   // سجل الأحداث
   if (game.log) {
     ctx.fillStyle = "white";
-    ctx.font = "50px Arial center";
+    ctx.font = "50px Cairo center";
     ctx.fillText(game.log, 120, 75);
   }
 
