@@ -26,7 +26,7 @@ module.exports = async function handleInteraction(interaction, db) {
     };
 
     const runner = runners[gameId];
-    if (!runner) return interaction.reply({ content: "❌ اللعبة غير متوفرة.", ephemeral: true });
+    if (!runner) return interaction.reply({ content: " اللعبة غير متوفرة.<:icons8wrong100:1407439999611310130>", ephemeral: true });
 
     await runner(interaction, db);
   }
