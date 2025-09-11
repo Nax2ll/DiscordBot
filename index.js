@@ -4583,6 +4583,8 @@ async function renderMultiplayerBuckshot(channelId) {
 
     ctx.fillStyle = "white";
   ctx.font = " 17px Cairo";
+       ctx.textAlign = "center";
+
     ctx.fillText(`x${count}`, x + 45, y + 30);
   }
 
@@ -4613,6 +4615,8 @@ async function renderMultiplayerBuckshot(channelId) {
   if (game.log) {
     ctx.fillStyle = "white";
   ctx.font = "50px Cairo";
+       ctx.textAlign = "center";
+
     ctx.fillText(game.log, 120, 75);
   }
 
