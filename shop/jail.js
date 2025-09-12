@@ -56,7 +56,7 @@ module.exports = async function handleJail(interaction, db) {
   if (id === "jail_menu" && value === "jail_action") {
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId("shop_back").setLabel(" العودة").setStyle(ButtonStyle.Secondary).setEmoji("1407426312603439226"),
-      new ButtonBuilder().setCustomId("confirm_mention_jail").setLabel(" تأكيد السجن").setStyle(ButtonStyle.Secondary).setEmoji("1407440011183259699")
+      new ButtonBuilder().setCustomId("confirm_mention_jail").setLabel(" تأكيد السجن").setStyle(ButtonStyle.Secondary).setEmoji("1415979896433278986")
     );
 
     await interaction.update({
@@ -71,10 +71,10 @@ module.exports = async function handleJail(interaction, db) {
     collector.on("collect", async (message) => {
       const target = message.mentions.members.first();
       if (!target || target.user.bot || target.id === userId) {
-        return message.reply(" لا يمكنك سجن هذا الشخص. <:icons8wrong100:1407439999611310130>");
+        return message.reply(" لا يمكنك سجن هذا الشخص. <:icons8wrong1001:1415979909825695914>");
       }
       jailTargetMap.set(userId, target.id);
-      const reply = await message.reply(` تم حفظ <@${target.id}>. اضغط تأكيد لإتمام السجن. <:icons8correct1001:1407440011183259699>`);
+      const reply = await message.reply(` تم حفظ <@${target.id}>. اضغط تأكيد لإتمام السجن. <:icons8correct1002:1415979896433278986>`);
       setTimeout(() => reply.delete().catch(() => {}), 5000);
       setTimeout(() => message.delete().catch(() => {}), 100);
     });
@@ -84,17 +84,17 @@ module.exports = async function handleJail(interaction, db) {
   if (id === "confirm_mention_jail") {
     const targetId = jailTargetMap.get(userId);
     if (!targetId) {
-      return interaction.reply({ content: " لم يتم منشن أي شخص. <:icons8wrong100:1407439999611310130>", ephemeral: true });
+      return interaction.reply({ content: " لم يتم منشن أي شخص. <:icons8wrong1001:1415979909825695914>", ephemeral: true });
     }
 
     const target = await guild.members.fetch(targetId).catch(() => null);
     if (!target) {
-      return interaction.reply({ content: " لم يتم العثور على العضو. <:icons8wrong100:1407439999611310130>", ephemeral: true });
+      return interaction.reply({ content: " لم يتم العثور على العضو. <:icons8wrong1001:1415979909825695914>", ephemeral: true });
     }
 
     const balance = await getBalance(userId, db);
     if (balance < jailPrice) {
-      return interaction.reply({ content: ` لا تملك كاش كافي. السعر: <:icons8wrong100:1407439999611310130> ${jailPrice}`, ephemeral: true });
+      return interaction.reply({ content: ` لا تملك كاش كافي. السعر: <:icons8wrong1001:1415979909825695914> ${jailPrice}`, ephemeral: true });
     }
 
     const rolesToRemove = target.roles.cache
@@ -132,7 +132,7 @@ module.exports = async function handleJail(interaction, db) {
   if (id === "jail_menu" && value === "bail_action") {
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId("shop_back").setLabel(" العودة").setStyle(ButtonStyle.Secondary).setEmoji("1407426312603439226"),
-      new ButtonBuilder().setCustomId("confirm_mention_bail").setLabel(" تأكيد الكفالة").setStyle(ButtonStyle.Secondary).setEmoji("1407440011183259699")
+      new ButtonBuilder().setCustomId("confirm_mention_bail").setLabel(" تأكيد الكفالة").setStyle(ButtonStyle.Secondary).setEmoji("1415979896433278986")
     );
 
     await interaction.update({
@@ -147,10 +147,10 @@ module.exports = async function handleJail(interaction, db) {
     collector.on("collect", async (message) => {
       const target = message.mentions.members.first();
       if (!target || target.user.bot || target.id === userId || !target.roles.cache.has(jailRoleId)) {
-        return message.reply(" هذا الشخص غير مسجون. <:icons8wrong100:1407439999611310130>");
+        return message.reply(" هذا الشخص غير مسجون. <:icons8wrong1001:1415979909825695914>");
       }
       bailTargetMap.set(userId, target.id);
-      const reply = await message.reply(` تم حفظ <@${target.id}>. اضغط تأكيد لإتمام الكفالة. <:icons8correct1001:1407440011183259699>`);
+      const reply = await message.reply(` تم حفظ <@${target.id}>. اضغط تأكيد لإتمام الكفالة. <:icons8correct1002:1415979896433278986>`);
       setTimeout(() => reply.delete().catch(() => {}), 5000);
       setTimeout(() => message.delete().catch(() => {}), 100);
     });
@@ -160,22 +160,22 @@ module.exports = async function handleJail(interaction, db) {
   if (id === "confirm_mention_bail") {
     const targetId = bailTargetMap.get(userId);
     if (!targetId) {
-      return interaction.reply({ content: " لم يتم منشن أي شخص. <:icons8wrong100:1407439999611310130>", ephemeral: true });
+      return interaction.reply({ content: " لم يتم منشن أي شخص. <:icons8wrong1001:1415979909825695914>", ephemeral: true });
     }
 
     const target = await guild.members.fetch(targetId).catch(() => null);
     if (!target) {
-      return interaction.reply({ content: " لم يتم العثور على العضو. <:icons8wrong100:1407439999611310130>", ephemeral: true });
+      return interaction.reply({ content: " لم يتم العثور على العضو. <:icons8wrong1001:1415979909825695914>", ephemeral: true });
     }
 
     const balance = await getBalance(userId, db);
     if (balance < bailPrice) {
-      return interaction.reply({ content: ` لا تملك كاش كافي. السعر: <:icons8wrong100:1407439999611310130> ${bailPrice}`, ephemeral: true });
+      return interaction.reply({ content: ` لا تملك كاش كافي. السعر: <:icons8wrong1001:1415979909825695914> ${bailPrice}`, ephemeral: true });
     }
 
     const record = await db.collection("prisoner_users").findOne({ userId: target.id });
     if (!record) {
-      return interaction.reply({ content: " لا يوجد بيانات لهذا السجين. <:icons8wrong100:1407439999611310130>", ephemeral: true });
+      return interaction.reply({ content: " لا يوجد بيانات لهذا السجين. <:icons8wrong1001:1415979909825695914>", ephemeral: true });
     }
 
     await subtractBalance(userId, bailPrice, db);
@@ -200,7 +200,7 @@ module.exports = async function handleJail(interaction, db) {
   if (id === "jail_menu" && value === "visit_action") {
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId("shop_back").setLabel(" العودة").setStyle(ButtonStyle.Secondary).setEmoji("1407426312603439226"),
-      new ButtonBuilder().setCustomId("confirm_visit").setLabel(" تأكيد الزيارة").setStyle(ButtonStyle.Secondary).setEmoji("1407440011183259699")
+      new ButtonBuilder().setCustomId("confirm_visit").setLabel(" تأكيد الزيارة").setStyle(ButtonStyle.Secondary).setEmoji("1415979896433278986")
     );
 
     await interaction.update({
@@ -213,7 +213,7 @@ module.exports = async function handleJail(interaction, db) {
   if (id === "confirm_visit") {
     const balance = await getBalance(userId, db);
     if (balance < visitPrice) {
-      return interaction.reply({ content: ` لا تملك كاش كافي. السعر: <:icons8wrong100:1407439999611310130> ${visitPrice}`, ephemeral: true });
+      return interaction.reply({ content: ` لا تملك كاش كافي. السعر: <:icons8wrong1001:1415979909825695914> ${visitPrice}`, ephemeral: true });
     }
 
     const member = await guild.members.fetch(userId);

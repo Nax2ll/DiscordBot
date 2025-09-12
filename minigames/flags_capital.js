@@ -16,13 +16,16 @@ const activeGames = new Map();
 
 module.exports = async function startFlagsCapitalGame(interaction, db) {
   const gameId = interaction.id;
-  if (activeGames.has(gameId)) return interaction.reply({ content: "❌ هناك لعبة جارية بالفعل.", ephemeral: true });
+  if (activeGames.has(gameId)) return interaction.reply({ content: "<:icons8wrong1001:1415979909825695914> هناك لعبة جارية بالفعل.", ephemeral: true });
 
   let round = 0;
   const scores = new Map(); // { userId: { points, username } }
 
   const gameMessage = await interaction.reply({ content: "🕹️ جاري بدء لعبة علم + عاصمة...", fetchReply: true });
   activeGames.set(gameId, true);
+
+  // سنحذف آخر رسالة بعد 10 ثوانٍ من إرسال الرسالة التالية
+  let lastRoundMessage = gameMessage;
 
   async function nextRound() {
     if (round >= 5) return endGame();
@@ -40,23 +43,35 @@ module.exports = async function startFlagsCapitalGame(interaction, db) {
       )
     );
 
-    await gameMessage.edit({
+    // إرسال رسالة جديدة لكل جولة بدلاً من تعديل رسالة واحدة
+    const roundMsg = await interaction.followUp({
       content: `🏙️ (${round}/5)\nاختر عاصمة الدولة:`,
       files: [correct.image],
       components: [buttons],
       embeds: []
     });
 
-    const collector = gameMessage.createMessageComponentCollector({ time: 30_000 });
+    // بعد إرسال الرسالة الجديدة بعشر ثوانٍ، احذف السابقة (إن وجدت)
+    if (lastRoundMessage) {
+      const toDelete = lastRoundMessage;
+      setTimeout(() => {
+        toDelete.delete().catch(() => {});
+      }, 10_000);
+    }
+    lastRoundMessage = roundMsg;
+
+    // اجمع تفاعلات الأزرار على رسالة الجولة نفسها
+    const collector = roundMsg.createMessageComponentCollector({ time: 30_000 });
     let answered = false;
 
     collector.on("collect", async (btn) => {
       const picked = btn.customId.split("_")[2];
       const userId = btn.user.id;
 
-      if (answered) {
-        return btn.reply({ content: "⏱️ سبق وتمت الإجابة الصحيحة في هذه الجولة!", ephemeral: true });
-      }
+      // لتفادي ظهور "This interaction failed"
+      await btn.deferUpdate().catch(() => {});
+
+      if (answered) return;
 
       if (picked === correct.capital) {
         answered = true;
@@ -77,13 +92,18 @@ module.exports = async function startFlagsCapitalGame(interaction, db) {
 
         await updateMinigameStats(db, userId, "flags_capital", true);
 
-        await btn.reply({ content: `✅ إجابة صحيحة! (+1 نقطة, +1000 💰)`, ephemeral: true });
+        // رسالة علنية تُعلن الفائز في هذه الجولة وتحذف بعد 10 ثوانٍ
+        const winMsg = await interaction.followUp({
+          content: `${btn.user.username} جاوب صح! وكسب 1000 ريال + نقطة`
+        });
+        setTimeout(() => {
+          winMsg.delete().catch(() => {});
+        }, 10_000);
 
         collector.stop();
         nextRound();
-      } else {
-        await btn.reply({ content: "❌ إجابة خاطئة!", ephemeral: true });
       }
+      // لا نرسل أي رسالة عند الإجابة الخاطئة أو بعد حسم الجولة (بدون ephemeral)
     });
 
     collector.on("end", () => {
@@ -91,7 +111,7 @@ module.exports = async function startFlagsCapitalGame(interaction, db) {
     });
   }
 
-  function endGame() {
+  async function endGame() {
     activeGames.delete(gameId);
 
     // ترتيب اللاعبين حسب النقاط
@@ -100,13 +120,29 @@ module.exports = async function startFlagsCapitalGame(interaction, db) {
       .map(([id, data], idx) => `**${idx + 1}. ${data.username}** - ${data.points} نقطة (💰 ${data.points * 1000})`)
       .join("\n");
 
-    return gameMessage.edit({
+    // إرسال رسالة النهاية كرسالة جديدة
+    const endMsg = await interaction.followUp({
       content:
-        `🏁 انتهت لعبة علم + عاصمة!\n\n${ranking || "❌ لم يجب أحد"}\n\n🥇 الفائز: ${ranking ? ranking.split("\n")[0] : "لا يوجد"}`,
+        `🏁 انتهت لعبة علم + عاصمة!\n\n${ranking || "<:icons8wrong1001:1415979909825695914> لم يجب أحد"}\n\n🥇 الفائز: ${ranking ? ranking.split("\n")[0] : "لا يوجد"}`,
       components: [],
       embeds: [],
       files: []
     });
+
+    // حذف آخر رسالة جولة بعد 10 ثوانٍ من إرسال رسالة النهاية
+    if (lastRoundMessage) {
+      const toDelete = lastRoundMessage;
+      setTimeout(() => {
+        toDelete.delete().catch(() => {});
+      }, 10_000);
+    }
+
+    // حذف رسالة النهاية بعد 25 ثانية
+    setTimeout(() => {
+      endMsg.delete().catch(() => {});
+    }, 25_000);
+
+    return endMsg;
   }
 
   nextRound();

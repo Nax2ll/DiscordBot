@@ -52,7 +52,7 @@ module.exports = async function handleRolesSection(interaction, db) {
       .setCustomId("confirm_roles_purchase")
       .setLabel(" تأكيد الشراء")
       .setStyle(ButtonStyle.Secondary)
-      .setEmoji("1407440011183259699")
+      .setEmoji("1415979896433278986")
   );
 
   // 🖼️ صورة الرولات مباشرة
@@ -79,7 +79,7 @@ module.exports = async function handleRolesSection(interaction, db) {
 
     if (i.customId === "confirm_roles_purchase") {
       const itemId = selectedRoleItem.get(i.user.id);
-      if (!itemId) return i.reply({ content: " اختر غرضًا أولاً. <:icons8wrong100:1407439999611310130>", ephemeral: true });
+      if (!itemId) return i.reply({ content: " اختر غرضًا أولاً. <:icons8wrong1001:1415979909825695914>", ephemeral: true });
 
       const item = roleItems.find(it => it.itemId === itemId);
       const guild = i.guild;
@@ -87,11 +87,11 @@ module.exports = async function handleRolesSection(interaction, db) {
       const role = guild.roles.cache.get(item.roleId);
 
       if (!role) {
-        return i.reply({ content: " هذا الرول غير موجود حالياً في السيرفر. <:icons8wrong100:1407439999611310130>", ephemeral: true });
+        return i.reply({ content: " هذا الرول غير موجود حالياً في السيرفر. <:icons8wrong1001:1415979909825695914>", ephemeral: true });
       }
 
       if (member.roles.cache.has(role.id)) {
-        return i.reply({ content: " لديك هذا الرول بالفعل! <:icons8wrong100:1407439999611310130>", ephemeral: true });
+        return i.reply({ content: " لديك هذا الرول بالفعل! <:icons8wrong1001:1415979909825695914>", ephemeral: true });
       }
 
       const balance = await getBalance(i.user.id, db);
@@ -103,7 +103,7 @@ module.exports = async function handleRolesSection(interaction, db) {
       await member.roles.add(role).catch(() => {});
 
       await i.reply({
-        content: ` تم شراء الرول: <:icons8correct1001:1407440011183259699> **${item.name}** بمبلغ ${item.price} <:ryal:1407444550863032330> .`,
+        content: ` تم شراء الرول: <:icons8correct1002:1415979896433278986> **${item.name}** بمبلغ ${item.price} <:ryal:1407444550863032330> .`,
         ephemeral: true
       });
     }

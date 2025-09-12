@@ -18,7 +18,7 @@ const activeGames = new Map();
 
 module.exports = async function startJam3Game(interaction, db) {
   const gameId = interaction.id;
-  if (activeGames.has(gameId)) return interaction.reply({ content: "❌ هناك لعبة جارية بالفعل.", ephemeral: true });
+  if (activeGames.has(gameId)) return interaction.reply({ content: "<:icons8wrong1001:1415979909825695914> هناك لعبة جارية بالفعل.", ephemeral: true });
 
   const usedIndices = new Set();
   let round = 0;
@@ -26,6 +26,9 @@ module.exports = async function startJam3Game(interaction, db) {
 
   const gameMessage = await interaction.reply({ content: "🕹️ جاري بدء لعبة جمّع...", fetchReply: true });
   activeGames.set(gameId, true);
+
+  // سنحذف آخر رسالة بعد 10 ثوانٍ من إرسال الرسالة التالية
+  let lastRoundMessage = gameMessage;
 
   async function nextRound() {
     if (round >= 5) return endGame();
@@ -43,11 +46,21 @@ module.exports = async function startJam3Game(interaction, db) {
     const imageBuffer = await drawLettersImage(separated);
     const attachment = new AttachmentBuilder(imageBuffer, { name: `jam3.png` });
 
-    await gameMessage.edit({
+    // إرسال رسالة جديدة لكل جولة بدلاً من تعديل رسالة واحدة
+    const roundMsg = await interaction.followUp({
       content: `🎯 جمّع الكلمة (${round}/5)`,
       files: [attachment],
       embeds: []
     });
+
+    // بعد إرسال الرسالة الجديدة بعشر ثوانٍ، احذف السابقة (إن وجدت)
+    if (lastRoundMessage) {
+      const toDelete = lastRoundMessage;
+      setTimeout(() => {
+        toDelete.delete().catch(() => {});
+      }, 10_000);
+    }
+    lastRoundMessage = roundMsg;
 
     const collector = gameMessage.channel.createMessageCollector({ time: 30_000 });
     let answered = false;
@@ -76,7 +89,7 @@ module.exports = async function startJam3Game(interaction, db) {
 
         await updateMinigameStats(db, msg.author.id, "jam3", true);
 
-        await msg.react("✅"); // ✅ نفس النظام اللي عاجبك
+        await msg.react("1415979896433278986"); // ✅ نفس النظام اللي عاجبك
 
         collector.stop();
         nextRound();
@@ -88,7 +101,7 @@ module.exports = async function startJam3Game(interaction, db) {
     });
   }
 
-  function endGame() {
+  async function endGame() {
     activeGames.delete(gameId);
 
     // ترتيب اللاعبين
@@ -97,13 +110,29 @@ module.exports = async function startJam3Game(interaction, db) {
       .map(([id, data], idx) => `**${idx + 1}. ${data.username}** - ${data.points} نقطة (💰 ${data.points * 1000})`)
       .join("\n");
 
-    return gameMessage.edit({
+    // إرسال رسالة النهاية كرسالة جديدة
+    const endMsg = await interaction.followUp({
       content:
-        `🏁 انتهت لعبة جمّع!\n\n${ranking || "❌ لم يجب أحد"}\n\n🥇 الفائز: ${ranking ? ranking.split("\n")[0] : "لا يوجد"}`,
+        `🏁 انتهت لعبة جمّع!\n\n${ranking || "<:icons8wrong1001:1415979909825695914> لم يجب أحد"}\n\n🥇 الفائز: ${ranking ? ranking.split("\n")[0] : "لا يوجد"}`,
       components: [],
       embeds: [],
       files: []
     });
+
+    // حذف آخر رسالة جولة بعد 10 ثوانٍ من إرسال رسالة النهاية
+    if (lastRoundMessage) {
+      const toDelete = lastRoundMessage;
+      setTimeout(() => {
+        toDelete.delete().catch(() => {});
+      }, 10_000);
+    }
+
+    // حذف رسالة النهاية بعد 25 ثانية
+    setTimeout(() => {
+      endMsg.delete().catch(() => {});
+    }, 25_000);
+
+    return endMsg;
   }
 
   nextRound();

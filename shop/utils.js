@@ -14,12 +14,12 @@ async function getUserInventory(userId, db) {
 // ✅ التحقق من إمكانية الشراء
 async function canBuyItem(userId, item, db) {
   const balance = await getBalance(userId, db);
-  if (balance < item.price) return { ok: false, reason: " رصيدك لا يكفي.<:icons8wrong100:1407439999611310130>" };
-  if (item.stock <= 0) return { ok: false, reason: " الغرض غير متوفر حالياً.<:icons8wrong100:1407439999611310130>" };
+  if (balance < item.price) return { ok: false, reason: " رصيدك لا يكفي.<:icons8wrong1001:1415979909825695914>" };
+  if (item.stock <= 0) return { ok: false, reason: " الغرض غير متوفر حالياً.<:icons8wrong1001:1415979909825695914>" };
 
   const inventory = await getUserInventory(userId, db);
   const owned = inventory[item.itemId] || 0;
-  if (owned >= item.maxPerUser) return { ok: false, reason: " لا يمكنك شراء أكثر من نسخة.<:icons8wrong100:1407439999611310130>" };
+  if (owned >= item.maxPerUser) return { ok: false, reason: " لا يمكنك شراء أكثر من نسخة.<:icons8wrong1001:1415979909825695914>" };
 
   return { ok: true };
 }

@@ -18,7 +18,7 @@ const activeGames = new Map();
 
 module.exports = async function startFakkakGame(interaction, db) {
   const gameId = interaction.id;
-  if (activeGames.has(gameId)) return interaction.reply({ content: "❌ هناك لعبة جارية بالفعل.", ephemeral: true });
+  if (activeGames.has(gameId)) return interaction.reply({ content: "<:icons8wrong1001:1415979909825695914> هناك لعبة جارية بالفعل.", ephemeral: true });
 
   const usedIndices = new Set();
   let round = 0;
@@ -26,6 +26,9 @@ module.exports = async function startFakkakGame(interaction, db) {
 
   const gameMessage = await interaction.reply({ content: "🕹️ جاري بدء لعبة فكّك...", fetchReply: true });
   activeGames.set(gameId, true);
+
+  // سنحذف آخر رسالة بعد 10 ثوانٍ من إرسال الرسالة التالية
+  let lastRoundMessage = gameMessage;
 
   async function nextRound() {
     if (round >= 5) return endGame();
@@ -43,11 +46,21 @@ module.exports = async function startFakkakGame(interaction, db) {
     const imageBuffer = await drawWordImage(word.word);
     const attachment = new AttachmentBuilder(imageBuffer, { name: `fakkak.png` });
 
-    await gameMessage.edit({
+    // إرسال رسالة جديدة لكل جولة
+    const roundMsg = await interaction.followUp({
       content: `🎯 فكّك الكلمة (${round}/5)\n(أكتبها بحروف وبين كل حرف مسافة)`,
       files: [attachment],
       embeds: []
     });
+
+    // بعد إرسال الرسالة الجديدة بعشر ثواني، احذف السابقة (إن وجدت)
+    if (lastRoundMessage) {
+      const toDelete = lastRoundMessage;
+      setTimeout(() => {
+        toDelete.delete().catch(() => {});
+      }, 10_000);
+    }
+    lastRoundMessage = roundMsg;
 
     const collector = gameMessage.channel.createMessageCollector({ time: 30_000 });
     let answered = false;
@@ -75,7 +88,7 @@ module.exports = async function startFakkakGame(interaction, db) {
 
         await updateMinigameStats(db, msg.author.id, "fakkak", true);
 
-        await msg.react("✅");
+        await msg.react("1415979896433278986");
 
         collector.stop();
         nextRound();
@@ -87,7 +100,7 @@ module.exports = async function startFakkakGame(interaction, db) {
     });
   }
 
-  function endGame() {
+  async function endGame() {
     activeGames.delete(gameId);
 
     // ترتيب اللاعبين
@@ -96,13 +109,29 @@ module.exports = async function startFakkakGame(interaction, db) {
       .map(([id, data], idx) => `**${idx + 1}. ${data.username}** - ${data.points} نقطة (💰 ${data.points * 1000})`)
       .join("\n");
 
-    return gameMessage.edit({
+    // إرسال رسالة النهاية
+    const endMsg = await interaction.followUp({
       content:
-        `🏁 انتهت لعبة فكك!\n\n${ranking || "❌ لم يجب أحد"}\n\n🥇 الفائز: ${ranking ? ranking.split("\n")[0] : "لا يوجد"}`,
+        `🏁 انتهت لعبة فكك!\n\n${ranking || "<:icons8wrong1001:1415979909825695914> لم يجب أحد"}\n\n🥇 الفائز: ${ranking ? ranking.split("\n")[0] : "لا يوجد"}`,
       components: [],
       embeds: [],
       files: []
     });
+
+    // حذف آخر رسالة جولة بعد 10 ثوانٍ من إرسال رسالة النهاية
+    if (lastRoundMessage) {
+      const toDelete = lastRoundMessage;
+      setTimeout(() => {
+        toDelete.delete().catch(() => {});
+      }, 10_000);
+    }
+
+    // حذف رسالة النهاية بعد 25 ثانية
+    setTimeout(() => {
+      endMsg.delete().catch(() => {});
+    }, 25_000);
+
+    return endMsg;
   }
 
   nextRound();

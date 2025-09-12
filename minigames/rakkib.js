@@ -19,7 +19,7 @@ const activeGames = new Map();
 
 module.exports = async function startRakkibGame(interaction, db) {
   const gameId = interaction.id;
-  if (activeGames.has(gameId)) return interaction.reply({ content: "❌ هناك لعبة جارية بالفعل.", ephemeral: true });
+  if (activeGames.has(gameId)) return interaction.reply({ content: "<:icons8wrong1001:1415979909825695914> هناك لعبة جارية بالفعل.", ephemeral: true });
 
   const usedIndices = new Set();
   let round = 0;
@@ -27,6 +27,9 @@ module.exports = async function startRakkibGame(interaction, db) {
 
   const gameMessage = await interaction.reply({ content: "🕹️ جاري بدء لعبة ركّب...", fetchReply: true });
   activeGames.set(gameId, true);
+
+  // سنحذف آخر رسالة بعد 10 ثوانٍ من إرسال الرسالة التالية
+  let lastRoundMessage = gameMessage;
 
   async function nextRound() {
     if (round >= 5) return endGame();
@@ -44,41 +47,58 @@ module.exports = async function startRakkibGame(interaction, db) {
     const imageBuffer = await drawLettersImage(shuffled.join(" "));
     const attachment = new AttachmentBuilder(imageBuffer, { name: `rakkib.png` });
 
-    await gameMessage.edit({
+    // إرسال رسالة جديدة لكل جولة
+    const roundMsg = await interaction.followUp({
       content: `🔤 كوّن كلمة من هذه الحروف (${round}/5)`,
       files: [attachment],
       embeds: []
     });
 
+    // حذف رسالة الجولة السابقة بعد 10 ثوانٍ
+    if (lastRoundMessage) {
+      const toDelete = lastRoundMessage;
+      setTimeout(() => {
+        toDelete.delete().catch(() => {});
+      }, 10_000);
+    }
+    lastRoundMessage = roundMsg;
+
     const collector = gameMessage.channel.createMessageCollector({ time: 30_000 });
     let answered = false;
 
     collector.on("collect", async (msg) => {
-      if (answered) return; // أول واحد فقط
+      if (answered) return; // أول إجابة صحيحة فقط
 
       const input = msg.content.replace(/\s+/g, "").trim();
+      // يجب أن تكون الكلمة في القاموس
       if (!dictionary.includes(input)) return;
+      // يجب استخدام جميع الحروف (أناغرام كامل)
+      if (input.length !== word.word.length) return;
       if (!canBeFormedFrom(input, word.word)) return;
 
       answered = true;
 
+      const isOriginal = input === word.word;
+      const pointsEarned = isOriginal ? 2 : 1;
+      const cashEarned = isOriginal ? 2000 : 1000;
+
       // تحديث نقاط اللاعب
       const prev = scores.get(msg.author.id) || { points: 0, username: msg.author.username };
-      prev.points += 1;
+      prev.points += pointsEarned;
       scores.set(msg.author.id, prev);
 
       // إضافة فلوس
-      await addBalance(msg.author.id, 1000, db);
+      await addBalance(msg.author.id, cashEarned, db);
       await db.collection("transactions").insertOne({
         userId: msg.author.id,
-        amount: 1000,
+        amount: cashEarned,
         reason: "ربح من لعبة ركب",
         timestamp: new Date()
       });
 
       await updateMinigameStats(db, msg.author.id, "rakkib", true);
 
-      await msg.react("✅");
+      await msg.react("1415979896433278986");
 
       collector.stop();
       nextRound();
@@ -89,7 +109,7 @@ module.exports = async function startRakkibGame(interaction, db) {
     });
   }
 
-  function endGame() {
+  async function endGame() {
     activeGames.delete(gameId);
 
     // ترتيب اللاعبين
@@ -98,13 +118,29 @@ module.exports = async function startRakkibGame(interaction, db) {
       .map(([id, data], idx) => `**${idx + 1}. ${data.username}** - ${data.points} نقطة (💰 ${data.points * 1000})`)
       .join("\n");
 
-    return gameMessage.edit({
+    // إرسال رسالة النهاية كرسالة جديدة
+    const endMsg = await interaction.followUp({
       content:
-        `🏁 انتهت لعبة ركّب!\n\n${ranking || "❌ لم يجب أحد"}\n\n🥇 الفائز: ${ranking ? ranking.split("\n")[0] : "لا يوجد"}`,
+        `🏁 انتهت لعبة ركّب!\n\n${ranking || "<:icons8wrong1001:1415979909825695914> لم يجب أحد"}\n\n🥇 الفائز: ${ranking ? ranking.split("\n")[0] : "لا يوجد"}`,
       components: [],
       embeds: [],
       files: []
     });
+
+    // حذف آخر رسالة جولة بعد 10 ثوانٍ من إرسال رسالة النهاية
+    if (lastRoundMessage) {
+      const toDelete = lastRoundMessage;
+      setTimeout(() => {
+        toDelete.delete().catch(() => {});
+      }, 10_000);
+    }
+
+    // حذف رسالة النهاية بعد 25 ثانية
+    setTimeout(() => {
+      endMsg.delete().catch(() => {});
+    }, 25_000);
+
+    return endMsg;
   }
 
   nextRound();

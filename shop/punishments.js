@@ -68,7 +68,7 @@ if (id === "punishments_menu" && actions[value]) {
 
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId("shop_back").setLabel(" العودة").setStyle(ButtonStyle.Secondary).setEmoji("1407426312603439226"),
-    new ButtonBuilder().setCustomId(action.buttonId).setLabel(" تأكيد العقوبة").setStyle(ButtonStyle.Secondary).setEmoji("1407440011183259699")
+    new ButtonBuilder().setCustomId(action.buttonId).setLabel(" تأكيد العقوبة").setStyle(ButtonStyle.Secondary).setEmoji("1415979896433278986")
   );
 
   const img = new AttachmentBuilder("./assets/templates/Punishment.png", { name: "Punishment.png" });
@@ -92,10 +92,10 @@ if (id === "punishments_menu" && actions[value]) {
   collector.on("collect", async (message) => {
     const target = message.mentions.members.first();
     if (!target || target.user.bot || target.id === userId) {
-      return message.reply(" لا يمكنك معاقبة هذا الشخص.<:icons8wrong100:1407439999611310130>");
+      return message.reply(" لا يمكنك معاقبة هذا الشخص.<:icons8wrong1001:1415979909825695914>");
     }
     targetMap.set(userId, { id: target.id, action: value });
-    const reply = await message.reply(` تم حفظ <@${target.id}>. اضغط تأكيد لتطبيق العقوبة. <:icons8correct1001:1407440011183259699>`);
+    const reply = await message.reply(` تم حفظ <@${target.id}>. اضغط تأكيد لتطبيق العقوبة. <:icons8correct1002:1415979896433278986>`);
     setTimeout(() => reply.delete().catch(() => {}), 5000);
     setTimeout(() => message.delete().catch(() => {}), 100);
   });
@@ -104,18 +104,18 @@ if (id === "punishments_menu" && actions[value]) {
   const executeAction = async (actionKey, interaction) => {
     const data = targetMap.get(userId);
     if (!data || data.action !== actionKey) {
-      return interaction.reply({ content: " لم يتم منشن أحد.<:icons8wrong100:1407439999611310130>", ephemeral: true });
+      return interaction.reply({ content: " لم يتم منشن أحد.<:icons8wrong1001:1415979909825695914>", ephemeral: true });
     }
 
     const target = await guild.members.fetch(data.id).catch(() => null);
     if (!target) {
-      return interaction.reply({ content: " لم يتم العثور على العضو.<:icons8wrong100:1407439999611310130>", ephemeral: true });
+      return interaction.reply({ content: " لم يتم العثور على العضو.<:icons8wrong1001:1415979909825695914>", ephemeral: true });
     }
 
     const userBalance = await getBalance(userId, db);
     const price = actions[actionKey].price;
     if (userBalance < price) {
-      return interaction.reply({ content: ` رصيدك غير كافٍ. السعر:<:icons8wrong100:1407439999611310130> ${price}`, ephemeral: true });
+      return interaction.reply({ content: ` رصيدك غير كافٍ. السعر:<:icons8wrong1001:1415979909825695914> ${price}`, ephemeral: true });
     }
 
     await subtractBalance(userId, price, db);
