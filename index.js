@@ -893,7 +893,7 @@ async function buildAlphabetBoardImage(states) {
 
       // الحرف
       ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 28px Sans-Serif";
+      ctx.font = "bold 28px Cairo";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.direction = "rtl";
