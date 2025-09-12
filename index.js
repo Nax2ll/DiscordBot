@@ -858,7 +858,7 @@ async function buildAlphabetBoardImage(states) {
 
   // عنوان
   ctx.fillStyle = "#ffffff";
-  ctx.font = "bold 18px Sans-Serif";
+  ctx.font = "bold 18px Cairo";
   ctx.textAlign = "start";
   ctx.textBaseline = "alphabetic";
   ctx.direction = "rtl";
