@@ -1,6 +1,6 @@
 /********************************************************************************************
  *                                   DISCORD GAMBLING BOT                                   *
- *   نسخة جديدة مُحسنة بكامل التعديلات المطلوبة، مع MongoDB ونظام موحد للألعاب والرهانات   *
+ *   نسخة جديدة مُحسنة بكامل التعديلات المطلوبة، مع MongoDB ونظام موحد للالعاب والرهانات   *
  ********************************************************************************************/
 
 /******************************************
@@ -151,19 +151,19 @@ async function connectToMongo() {
   try {
     await mongoClient.connect();
     db = mongoClient.db("discord_casino");
-    console.log("<:icons8correct1001:1407440011183259699> MongoDB Connected!");
+    console.log("<:icons8correct1002:1415979896433278986> MongoDB Connected!");
 
 
   } catch (err) {
-    console.error("<:icons8wrong100:1407439999611310130> MongoDB Connection Error:", err);
+    console.error("<:icons8wrong1001:1415979909825695914> MongoDB Connection Error:", err);
   }
 }
 connectToMongo();
 
 
 mongoose.connect('mongodb+srv://Nael:i8VFiKISASCUzX5O@discordbot.wzwjonu.mongodb.net/discord_casino?retryWrites=true&w=majority&appName=DiscordBot')
-  .then(() => console.log('<:icons8correct1001:1407440011183259699> Mongoose Connected!'))
-  .catch((err) => console.error('<:icons8wrong100:1407439999611310130> Mongoose Connection Error:', err));
+  .then(() => console.log('<:icons8correct1002:1415979896433278986> Mongoose Connected!'))
+  .catch((err) => console.error('<:icons8wrong1001:1415979909825695914> Mongoose Connection Error:', err));
 
 
 
@@ -183,7 +183,7 @@ app.listen(3000, () => {
 });
 
 
-// ===== Router عام للتفاعلات والأوامر + الرسائل =====
+// ===== Router عام للتفاعلات والاوامر + الرسائل =====
 function createUIRouter(client) {
   const routes = {
     buttons: [],
@@ -197,10 +197,10 @@ function createUIRouter(client) {
     }
   };
 
-  // أدوات تطابق
+  // ادوات تطابق
   function matchPattern(pattern, text) {
     // يحوّل: bet_add_{inc}_{userId}_{gameId}_{current}
-    // إلى Regex يلتقط القيم بين الـ _
+    // الى Regex يلتقط القيم بين الـ _
     const keys = [];
     const regexStr = '^' + pattern.replace(/{(\w+)}/g, (_, k) => {
       keys.push(k);
@@ -238,12 +238,12 @@ function createUIRouter(client) {
   function modalPrefix(prefix, handler) { routes.modals.push({ type:'prefix', matcher: makeMatcher('prefix', prefix), handler }); }
   function modalPattern(pattern, handler) { routes.modals.push({ type:'pattern', matcher: makeMatcher('pattern', pattern), handler, pattern }); }
 
-  // “أوامر” قديمة (تُحافظ عليها للرجعية)
+  // “اوامر” قديمة (تُحافظ عليها للرجعية)
   function commandExact(text, handler) { routes.commands.push({ type:'exact', text, handler }); }
   function commandPrefix(prefix, handler) { routes.commands.push({ type:'prefix', prefix, handler }); }
   function commandRegex(regex, handler) { routes.commands.push({ type:'regex', regex, handler }); }
 
-  // واجهة الرسائل الجديدة (مطابقة أسلوب ui.messageExact/... الذي تستخدمه)
+  // واجهة الرسائل الجديدة (مطابقة اسلوب ui.messageExact/... الذي تستخدمه)
   function messageExact(text, handler) {
     const key = String(text).trim();
     if (!routes.messages.exact.has(key)) routes.messages.exact.set(key, []);
@@ -282,7 +282,7 @@ function createUIRouter(client) {
         }
       } catch (err) {
         console.error('Router interaction error:', err);
-        try { if (!i.replied && !i.deferred) await i.reply({ content: 'حدث خطأ غير متوقع.', ephemeral: true }); } catch {}
+        try { if (!i.replied && !i.deferred) await i.reply({ content: 'حدث خطا غير متوقع.', ephemeral: true }); } catch {}
       }
     });
 
@@ -301,7 +301,7 @@ function createUIRouter(client) {
           return;
         }
 
-        // (2) مطابقة Prefix — أول تطابق يفوز (نمرّر الباقي اختيارياً)
+        // (2) مطابقة Prefix — اول تطابق يفوز (نمرّر الباقي اختيارياً)
         for (const { prefix, handler } of routes.messages.prefix) {
           if (text.startsWith(prefix)) {
             const rest = text.slice(prefix.length).trim();
@@ -310,7 +310,7 @@ function createUIRouter(client) {
           }
         }
 
-        // (3) مرشحات مخصصة — أول predicate=true يفوز
+        // (3) مرشحات مخصصة — اول predicate=true يفوز
         for (const { predicate, handler } of routes.messages.filters) {
           let ok = false;
           try { ok = await predicate(msg); } catch {}
@@ -320,7 +320,7 @@ function createUIRouter(client) {
           }
         }
 
-        // (4) دعم الرجعية: أوامر commands القديمة (exact/prefix/regex)
+        // (4) دعم الرجعية: اوامر commands القديمة (exact/prefix/regex)
         for (const r of routes.commands) {
           if (r.type === 'exact' && text === r.text) return r.handler(msg);
           if (r.type === 'prefix' && text.startsWith(r.prefix)) return r.handler(msg, text.slice(r.prefix.length).trim());
@@ -340,7 +340,7 @@ function createUIRouter(client) {
     buttonExact, buttonPrefix, buttonRegex, buttonPattern,
     selectExact, selectPrefix, selectPattern,
     modalExact, modalPrefix, modalPattern,
-    // أوامر قديمة (للتوافق)
+    // اوامر قديمة (للتوافق)
     commandExact, commandPrefix, commandRegex,
     // رسائل جديدة
     messageExact, messagePrefix, messageFilter,
@@ -348,7 +348,7 @@ function createUIRouter(client) {
     mount,
   };
 }
-// أنشئ الراوتر مرّة واحدة أعلى الملف
+// انشئ الراوتر مرّة واحدة اعلى الملف
 const ui = createUIRouter(client);
 
 // ===== Solo Bet Flow =====
@@ -356,7 +356,7 @@ ui.buttonExact("hit", handleMultiplayerBlackjackInteraction);
 ui.buttonExact("stand", handleMultiplayerBlackjackInteraction);
 ui.buttonPrefix("color_", handleColorWarButton);
 ui.buttonPrefix("withdraw_", handleTimeRoomWithdraw);
-// سجل أزرار اللعبة في الراوتر
+// سجل ازرار اللعبة في الراوتر
 ui.buttonPrefix("roulette_", handleRouletteButtons);
 
 // سجّل الزر مع راوتر التفاعلات
@@ -365,7 +365,7 @@ ui.buttonPrefix("passbomb_", handleBombPass);
 // اختيار لعبة متعددة اللاعبين
 ui.selectExact("select_multi_game", handleSelectMultiGame);
 
-// أزرار اللوبي
+// ازرار اللوبي
 ui.buttonExact("lobby_join", handleLobbyJoin);
 ui.buttonExact("lobby_bet", handleLobbyBet);
 ui.buttonExact("lobby_leave", handleLobbyLeave);
@@ -439,9 +439,9 @@ ui.messageExact("سلوت ", (msg) => handleTextGameShortcut(msg, "soloslot"));
 ui.messageExact("صندوق الحظ", (msg) => handleTextGameShortcut(msg, "solomystery"));
 ui.messageExact("صندوق ", (msg) => handleTextGameShortcut(msg, "solomystery"));
 
-// مجموعات نصوص لتحدي الأوراق وباكشوت
-const cardTriggers = ["تحدي الاوراق", "الاوراق", "الأوراق", "تحدي الأوراق"];
-const buckshotTriggers = ["باكشوت", "باك شوت", "بكشوت", "بك شوت", "بأكشوت ", "بأك شوت"];
+// مجموعات نصوص لتحدي الاوراق وباكشوت
+const cardTriggers = ["تحدي الاوراق", "الاوراق", "الاوراق", "تحدي الاوراق"];
+const buckshotTriggers = ["باكشوت", "باك شوت", "بكشوت", "بك شوت", "باكشوت ", "باك شوت"];
 
 for (const t of cardTriggers) ui.messageExact(t, (msg) => handleTextGameShortcut(msg, "solocard"));
 for (const t of buckshotTriggers) ui.messageExact(t, (msg) => handleTextGameShortcut(msg, "solobuckshot"));
@@ -483,15 +483,15 @@ function handleMinigamesCommandMsg(message) {
 }
 
 /******************************************
- * ربط أوامر/تفاعلات الميني قيمز، المتجر، ولعبة حرف عبر الراوتر
+ * ربط اوامر/تفاعلات الميني قيمز، المتجر، ولعبة حرف عبر الراوتر
  * (نفس المنطق والمخرجات، بدون مستمعات مباشرة)
  ******************************************/
 
 // =====[ استيرادات ]=====
-const handleMinigamesCommand = require("./commands/minigames");            // قائمة الميني قيمز (يفتح من أمر "ميني")
+const handleMinigamesCommand = require("./commands/minigames");            // قائمة الميني قيمز (يفتح من امر "ميني")
 const handleMinigameInteraction = require("./events/interactionHandler");  // معالج اختيارات الميني قيمز
 
-const handleShopCommand = require("./commands/shop");  // أمر "المتجر"
+const handleShopCommand = require("./commands/shop");  // امر "المتجر"
 const handleShopInteraction = require("./shop");       // تفاعلات المتجر
 
 // لعبة حرف (داخل مجلد games)
@@ -504,7 +504,7 @@ const handleHarfModal = harfModule.handleHarfModal || (async () => {});
 const handleHarfVote = harfModule.handleVote || (async () => {});             // ربط التصويت
 
 /******************************************
- * أوامر الرسائل (بدون messageCreate)
+ * اوامر الرسائل (بدون messageCreate)
  ******************************************/
 
 // 🔤 "حرف" → افتح لوبي لعبة حرف
@@ -514,15 +514,15 @@ ui.messageExact("حرف", async (msg) => {
     return showHarfLobby(msg.channel);       // عرض اللوبي
   } catch (e) {
     console.error("حرف start error:", e);
-    return msg.reply("<:icons8wrong100:1407439999611310130> ما قدرت أبدأ لعبة حرف.");
+    return msg.reply("<:icons8wrong1001:1415979909825695914> ما قدرت ابدا لعبة حرف.");
   }
 });
 
 // ===== Harf (Lobby + Game) =====
-// معالج واحد لكل أزرار harf_* يتجاهل أزرار التصويت ويمررها لمعالج التصويت
+// معالج واحد لكل ازرار harf_* يتجاهل ازرار التصويت ويمررها لمعالج التصويت
 async function handleHarfButtons(i) {
   try {
-    // لو كانت أزرار تصويت، مررها مباشرة لمعالج التصويت ثم أنهِ
+    // لو كانت ازرار تصويت، مررها مباشرة لمعالج التصويت ثم انهِ
     if (i.customId.startsWith("harf_vote_")) {
       await handleHarfVote(i);
       if (!i.deferred && !i.replied) await i.deferUpdate().catch(() => {});
@@ -535,17 +535,17 @@ async function handleHarfButtons(i) {
   } catch (e) {
     console.error("harf handler:", e);
   } finally {
-    // لو ما صار رد/تأجيل من أي معالج → نتفادى فشل التفاعل
+    // لو ما صار رد/تاجيل من اي معالج → نتفادى فشل التفاعل
     if (!i.deferred && !i.replied) {
       await i.deferUpdate().catch(() => {});
     }
   }
 }
 
-// ربط عام لأزرار لعبة حرف (يشمل كل شيء، والتصويت يُفلتر في الداخل)
+// ربط عام لازرار لعبة حرف (يشمل كل شيء، والتصويت يُفلتر في الداخل)
 ui.buttonPrefix("harf_", handleHarfButtons);
 
-// مودال إدخال الكلمة أثناء اللعب
+// مودال ادخال الكلمة اثناء اللعب
 ui.modalExact("harf_submit_modal", async (i) => {
   try { return handleHarfModal(i); } catch (e) { console.error("harf modal:", e); }
 });
@@ -554,7 +554,7 @@ ui.modalExact("harf_submit_modal", async (i) => {
  * تفاعلات الميني قيمز (بدون interactionCreate)
  ******************************************/
 
-// قائمة الميني قيمز + زر الإحصائيات
+// قائمة الميني قيمز + زر الاحصائيات
 ui.selectExact("minigame_menu", async (i) => {
   try { return handleMinigameInteraction(i, db); } catch (e) { console.error("minigame menu:", e); }
 });
@@ -571,7 +571,7 @@ async function getBalance(userId) {
   const user = await db.collection("users").findOne({ userId: String(userId) });
 
   if (!user) {
-    // إنشاء محفظة جديدة تلقائيًا
+    // انشاء محفظة جديدة تلقائيًا
     const newUser = {
       userId: String(userId),
       wallet: 1000,
@@ -621,12 +621,12 @@ async function getUserInventory(userId) {
 
 async function canBuyItem(userId, item) {
   const balance = await getBalance(userId);
-  if (balance < item.price) return { ok: false, reason: "<:icons8wrong100:1407439999611310130> رصيدك لا يكفي." };
-  if (item.stock <= 0) return { ok: false, reason: "<:icons8wrong100:1407439999611310130> الغرض غير متوفر حالياً." };
+  if (balance < item.price) return { ok: false, reason: "<:icons8wrong1001:1415979909825695914> رصيدك لا يكفي." };
+  if (item.stock <= 0) return { ok: false, reason: "<:icons8wrong1001:1415979909825695914> الغرض غير متوفر حالياً." };
 
   const inventory = await getUserInventory(userId);
   const owned = inventory[item.itemId] || 0;
-  if (owned >= item.maxPerUser) return { ok: false, reason: "<:icons8wrong100:1407439999611310130> لا يمكنك شراء أكثر من نسخة." };
+  if (owned >= item.maxPerUser) return { ok: false, reason: "<:icons8wrong1001:1415979909825695914> لا يمكنك شراء اكثر من نسخة." };
 
   return { ok: true };
 }
@@ -641,19 +641,19 @@ async function buyItem(userId, item) {
   );
 }
 
-// <:icons8correct1001:1407440011183259699> تحديث الرصيد + إضافة كشف حساب
+// <:icons8correct1002:1415979896433278986> تحديث الرصيد + اضافة كشف حساب
 async function updateBalanceWithLog(db, userId, amount, reason) {
   const users = db.collection("users");
   const transactions = db.collection("transactions");
 
   // 1. تعديل الرصيد في نفس الحقل wallet
   await users.updateOne(
-    { userId: String(userId) }, // <:icons8correct1001:1407440011183259699> مو id
-    { $inc: { wallet: amount } }, // <:icons8correct1001:1407440011183259699> مو balance
+    { userId: String(userId) }, // <:icons8correct1002:1415979896433278986> مو id
+    { $inc: { wallet: amount } }, // <:icons8correct1002:1415979896433278986> مو balance
     { upsert: true }
   );
 
-  // 2. إضافة سجل كشف الحساب
+  // 2. اضافة سجل كشف الحساب
   await transactions.insertOne({
     userId: String(userId),
     amount,
@@ -681,11 +681,11 @@ async function handleStatementMessage(msg) {
       .toArray();
 
     if (!docs.length) {
-      return msg.reply("📭 لا يوجد أي عمليات مسجلة لحسابك.");
+      return msg.reply("📭 لا يوجد اي عمليات مسجلة لحسابك.");
     }
 
     const embed = new EmbedBuilder()
-      .setTitle("📋 كشف العمليات الأخيرة")
+      .setTitle("📋 كشف العمليات الاخيرة")
       .setColor("Green");
 
     docs.forEach((tx, i) => {
@@ -705,7 +705,7 @@ async function handleStatementMessage(msg) {
     return msg.reply({ embeds: [embed] });
   } catch (err) {
     console.error("Statement route error:", err);
-    return msg.reply("<:icons8wrong100:1407439999611310130> حدث خطأ أثناء جلب كشف الحساب.").catch(() => {});
+    return msg.reply("<:icons8wrong1001:1415979909825695914> حدث خطا اثناء جلب كشف الحساب.").catch(() => {});
   }
 }
 
@@ -741,7 +741,7 @@ client.on("interactionCreate", async (i) => {
     return;
   }
 
-  // زر إعادة المحاولة
+  // زر اعادة المحاولة
   if (i.isButton() && i.customId.startsWith("solo_retry_")) {
     const gameId = i.customId.replace("solo_retry_", ""); // يجيب مثلا "soloroulette"
     const bal = await getBalance(i.user.id);
@@ -751,11 +751,11 @@ client.on("interactionCreate", async (i) => {
   // 📌 زر "💬 مخصص"
   if (i.isButton() && i.customId.startsWith("bet_custom_")) {
     const [, , userId, gameId] = i.customId.split("_");
-    if (i.user.id !== userId) return i.reply({ content: "<:icons8wrong100:1407439999611310130> هذا الزر ليس لك!", ephemeral: true });
+    if (i.user.id !== userId) return i.reply({ content: "<:icons8wrong1001:1415979909825695914> هذا الزر ليس لك!", ephemeral: true });
 
     const modal = new ModalBuilder()
       .setCustomId(`customamount_${userId}_${gameId}`)
-      .setTitle(" إدخال مبلغ مخصص")
+      .setTitle(" ادخال مبلغ مخصص")
       .addComponents(
         new ActionRowBuilder().addComponents(
           new TextInputBuilder()
@@ -771,12 +771,12 @@ client.on("interactionCreate", async (i) => {
     return i.showModal(modal);
   }
 
-  // 📌 نتيجة المودال بعد إدخال المبلغ
+  // 📌 نتيجة المودال بعد ادخال المبلغ
   if (i.isModalSubmit() && i.customId.startsWith("customamount_")) {
     const [, userId, gameId] = i.customId.split("_");
 
     if (i.user.id !== userId) {
-      return i.reply({ content: "<:icons8wrong100:1407439999611310130> هذا المودال ليس لك!", ephemeral: true });
+      return i.reply({ content: "<:icons8wrong1001:1415979909825695914> هذا المودال ليس لك!", ephemeral: true });
     }
 
     const amountStr = i.fields.getTextInputValue("custom_amount_input");
@@ -784,11 +784,11 @@ client.on("interactionCreate", async (i) => {
     const bal = await getBalance(userId);
 
     if (isNaN(amount) || amount <= 0) {
-      return i.reply({ content: "<:icons8wrong100:1407439999611310130> المبلغ غير صالح.", ephemeral: true });
+      return i.reply({ content: "<:icons8wrong1001:1415979909825695914> المبلغ غير صالح.", ephemeral: true });
     }
 
     if (amount > bal) {
-      return i.reply({ content: "<:icons8wrong100:1407439999611310130> ما عندك رصيد كافي!", ephemeral: true });
+      return i.reply({ content: "<:icons8wrong1001:1415979909825695914> ما عندك رصيد كافي!", ephemeral: true });
     }
 
     // 🛠 تحديث نفس الرسالة بعد المودال
@@ -798,24 +798,24 @@ client.on("interactionCreate", async (i) => {
   // 📌 تعديل المبلغ
   if (i.isButton() && i.customId.startsWith("bet_add_")) {
     const [, , amtStr, userId, gameId, current] = i.customId.split("_");
-    if (i.user.id !== userId) return i.reply({ content: "<:icons8wrong100:1407439999611310130> هذا الزر ليس لك!", ephemeral: true });
+    if (i.user.id !== userId) return i.reply({ content: "<:icons8wrong1001:1415979909825695914> هذا الزر ليس لك!", ephemeral: true });
 
     const newAmount = parseInt(current) + parseInt(amtStr);
     const bal = await getBalance(userId);
     return showBetInterface(i, userId, gameId, bal, newAmount);
   }
 
-  // 📌 تأكيد الرهان
+  // 📌 تاكيد الرهان
   if (i.isButton() && i.customId.startsWith("bet_confirm_")) {
     const [, , userId, gameId, amtStr] = i.customId.split("_");
-    if (i.user.id !== userId) return i.reply({ content: "<:icons8wrong100:1407439999611310130> ليس لك!", ephemeral: true });
+    if (i.user.id !== userId) return i.reply({ content: "<:icons8wrong1001:1415979909825695914> ليس لك!", ephemeral: true });
 
     const bet = parseInt(amtStr);
     const bal = await getBalance(userId);
-    if (bet > bal || isNaN(bet)) return i.reply({ content: "<:icons8wrong100:1407439999611310130> رصيدك لا يكفي أو هناك خطأ في الرهان", ephemeral: true });
+    if (bet > bal || isNaN(bet)) return i.reply({ content: "<:icons8wrong1001:1415979909825695914> رصيدك لا يكفي او هناك خطا في الرهان", ephemeral: true });
 
     const userDoc = await db.collection("users").findOne({ userId });
-    if (!userDoc) return i.reply({ content: "<:icons8wrong100:1407439999611310130> لا تملك محفظة بعد، استخدم أمر `رصيدي` لإنشائها.", ephemeral: true });
+    if (!userDoc) return i.reply({ content: "<:icons8wrong1001:1415979909825695914> لا تملك محفظة بعد، استخدم امر `رصيدي` لانشائها.", ephemeral: true });
 
     await db.collection("users").updateOne({ userId }, { $inc: { wallet: -bet } });
 
@@ -831,13 +831,13 @@ client.on("interactionCreate", async (i) => {
     if (typeof gameFunction === "function") {
       return gameFunction(i, bet);
     } else {
-      return i.channel.send("<:icons8wrong100:1407439999611310130> لم يتم العثور على اللعبة.");
+      return i.channel.send("<:icons8wrong1001:1415979909825695914> لم يتم العثور على اللعبة.");
     }
   }
 
-  // 📌 إلغاء الرهان
+  // 📌 الغاء الرهان
   if (i.isButton() && i.customId === "bet_cancel") {
-    return i.update({ content: "<:icons8wrong100:1407439999611310130> تم إلغاء الرهان.", embeds: [], components: [] });
+    return i.update({ content: "<:icons8wrong1001:1415979909825695914> تم الغاء الرهان.", embeds: [], components: [] });
   }
 });
 
@@ -882,7 +882,7 @@ async function showBetInterface(inter, userId, gameId, balance, amount = 1000, f
       .setCustomId(`bet_custom_${userId}_${gameId}`)
       .setLabel(" مخصص")
       .setStyle(ButtonStyle.Secondary)
-      .setEmoji("1407440156423622698")
+      .setEmoji("1415982903388536902")
   );
 
   const row2 = new ActionRowBuilder().addComponents(
@@ -890,12 +890,12 @@ async function showBetInterface(inter, userId, gameId, balance, amount = 1000, f
       .setCustomId(`bet_confirm_${userId}_${gameId}_${amount}`)
       .setLabel(" تاكيد")
       .setStyle(ButtonStyle.Secondary)
-      .setEmoji("1407440011183259699"),
+      .setEmoji("1415979896433278986"),
     new ButtonBuilder()
       .setCustomId(`bet_cancel`)
-      .setLabel(" إلغاء")
+      .setLabel(" الغاء")
       .setStyle(ButtonStyle.Secondary)
-      .setEmoji("1407439999611310130")
+      .setEmoji("1415979909825695914")
   );
 
   const payload = { embeds: [embed], components: [row1, row2] };
@@ -916,7 +916,7 @@ async function showBetInterface(inter, userId, gameId, balance, amount = 1000, f
 }
 
 
-//** <:icons8correct1001:1407440011183259699> دالة التحديث الموحد لإحصائيات الألعاب الفردية////////////////////////////////////////
+//** <:icons8correct1002:1415979896433278986> دالة التحديث الموحد لاحصائيات الالعاب الفردية////////////////////////////////////////
 
 async function updateSoloStats(userId, gameId, bet, didWin, earned) {
   const net = earned - bet;
@@ -941,20 +941,20 @@ async function updateSoloStats(userId, gameId, bet, didWin, earned) {
 }
 
 
-// <:icons8correct1001:1407440011183259699> دالة عرض الإحصائيات بنفس تنسيق الصورة
+// <:icons8correct1002:1415979896433278986> دالة عرض الاحصائيات بنفس تنسيق الصورة
 async function getSoloStatsEmbed(interaction, filterGameId = "all") {
   const userId = interaction.user.id;
   const doc = await db.collection("solostats").findOne({ userId });
 
   if (!doc || !doc.stats || Object.keys(doc.stats).length === 0) {
     return new EmbedBuilder()
-      .setTitle("📊 إحصائياتك")
+      .setTitle("📊 احصائياتك")
       .setDescription("لا توجد بيانات لعرضها.")
       .setColor("Orange");
   }
 
   const embed = new EmbedBuilder()
-    .setTitle("📊 إحصائيات الألعاب الفردية")
+    .setTitle("📊 احصائيات الالعاب الفردية")
     .setColor("#3498db")
     .setThumbnail(interaction.user.displayAvatarURL());
 
@@ -966,7 +966,7 @@ async function getSoloStatsEmbed(interaction, filterGameId = "all") {
     const winRate = data.totalGames > 0 ? ((data.wins / data.totalGames) * 100).toFixed(1) : "0";
     embed.addFields({
       name: `🎮 ${game}`,
-      value: `🕹️ الألعاب: **${data.totalGames}**
+      value: `🕹️ الالعاب: **${data.totalGames}**
 🏆 الفوز: **${data.wins}**
 💀 الخسارة: **${data.loses}**
 📈 الفوز: **${winRate}%**
@@ -980,7 +980,7 @@ async function getSoloStatsEmbed(interaction, filterGameId = "all") {
 }
 
 
-// <:icons8correct1001:1407440011183259699> دالة اختيارية تعرض اسم اللعبة بشكل جميل بدل gameId
+// <:icons8correct1002:1415979896433278986> دالة اختيارية تعرض اسم اللعبة بشكل جميل بدل gameId
 function getGameDisplayName(gameId) {
   const names = {
     soloroulette: "الروليت",
@@ -1010,7 +1010,7 @@ function getSoloBet(userId) {
   return bet || 0;
 }
 
-// 💰 معالجة نتيجة اللعبة وتحديث الرصيد والإحصائيات
+// 💰 معالجة نتيجة اللعبة وتحديث الرصيد والاحصائيات
 async function handleSoloGameResult(interaction, gameId, didWin, multiplier = 0) {
   const userId = interaction.user.id;
   const bet = getSoloBet(userId);
@@ -1031,7 +1031,7 @@ async function handleSoloGameResult(interaction, gameId, didWin, multiplier = 0)
  * - نفس customId والنصوص تماماً.
  * - لا Collectors ولا interactionCreate؛ المعالجة عبر الراوتر.
  * - تم الاكتفاء بتخزين جلسة خفيفة لضمان ملكية الرسالة، مع مؤقّت داخلي
- *   لإزالة الجلسة بعد 15 ثانية (بدون أي تغيير بصري للمستخدم).
+ *   لازالة الجلسة بعد 15 ثانية (بدون اي تغيير بصري للمستخدم).
 /* ================= صور ================= */
 
 
@@ -1092,7 +1092,7 @@ async function renderRouletteResultWithMarker(number, userId) {
   ctx.drawImage(avatar, centerX - radius, centerY - radius, radius * 2, radius * 2);
   ctx.restore();
 
-  // إحداثيات الأرقام (مطابقة للأصل)
+  // احداثيات الارقام (مطابقة للاصل)
   const numberPositions = {
     1: { x: 453, y: 193 }, 2: { x: 625, y: 817 }, 3: { x: 251, y: 301 },
     4: { x: 798, y: 679 }, 5: { x: 184, y: 518 }, 6: { x: 844, y: 464 },
@@ -1127,7 +1127,7 @@ async function renderRouletteResultWithMarker(number, userId) {
 
 /* ================= بدء اللعبة ================= */
 
-// نسخة مطابقة للأصل (زرّار + صورة فقط، بلا نص إضافي)
+// نسخة مطابقة للاصل (زرّار + صورة فقط، بلا نص اضافي)
 async function startSoloRoulette(interaction, bet) {
   const userId = interaction.user.id;
 
@@ -1137,20 +1137,20 @@ async function startSoloRoulette(interaction, bet) {
     { id: "25_36", label: "25–36", min: 25, max: 36, multiplier: 3 },
   ];
 
-  // أزرار اللون
+  // ازرار اللون
   const colorRow = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId("solo_roulette_color_red").setLabel("🔴 أحمر").setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId("solo_roulette_color_black").setLabel("⚫ أسود").setStyle(ButtonStyle.Secondary)
+    new ButtonBuilder().setCustomId("solo_roulette_color_red").setLabel("🔴 احمر").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId("solo_roulette_color_black").setLabel("⚫ اسود").setStyle(ButtonStyle.Secondary)
   );
 
   // زوجي/فردي + انسحاب
   const parityRow = new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId("solo_roulette_parity_even").setLabel("زوجي").setStyle(ButtonStyle.Secondary).setEmoji("1407423118993002668"),
     new ButtonBuilder().setCustomId("solo_roulette_parity_odd").setLabel("فردي").setStyle(ButtonStyle.Secondary).setEmoji("1407422287652720750"),
-    new ButtonBuilder().setCustomId("solo_roulette_cancel").setLabel(" انسحاب").setStyle(ButtonStyle.Secondary).setEmoji("1407439999611310130")
+    new ButtonBuilder().setCustomId("solo_roulette_cancel").setLabel(" انسحاب").setStyle(ButtonStyle.Secondary).setEmoji("1415979909825695914")
   );
 
-  // أزرار النطاق
+  // ازرار النطاق
   const rangeRow = new ActionRowBuilder();
   for (const r of ranges) {
     rangeRow.addComponents(
@@ -1158,7 +1158,7 @@ async function startSoloRoulette(interaction, bet) {
     );
   }
 
-  // إرسال صورة البداية + الأزرار
+  // ارسال صورة البداية + الازرار
   const startImg = await renderRouletteStartImage(userId);
   const sent = await interaction.channel.send({
     files: [startImg],
@@ -1172,9 +1172,9 @@ async function startSoloRoulette(interaction, bet) {
 
 /* ================= معالجات الراوتر ================= */
 
-// الأزرار (لون/زوجي-فردي/نطاق/انسحاب) — نفس منطق النسخة العاملة
+// الازرار (لون/زوجي-فردي/نطاق/انسحاب) — نفس منطق النسخة العاملة
 async function handleSoloRouletteButtons(i) {
-  // تأكيد سريع لمنع فشل التفاعل
+  // تاكيد سريع لمنع فشل التفاعل
   if (!i.deferred && !i.replied) {
     await i.deferUpdate().catch(() => {});
   }
@@ -1182,17 +1182,17 @@ async function handleSoloRouletteButtons(i) {
   const msgId = i.message?.id;
   const session = rouletteSessions.get(msgId);
   if (!session) {
-    // الرسالة خارج النافذة أو غير معروفة (مطابق لسلوك الانتهاء)
+    // الرسالة خارج النافذة او غير معروفة (مطابق لسلوك الانتهاء)
     return;
   }
   if (i.user.id !== session.userId) {
-    return i.followUp?.({ content: "<:icons8wrong100:1407439999611310130> هذا الزر ليس لك!", ephemeral: true }).catch(() => {});
+    return i.followUp?.({ content: "<:icons8wrong1001:1415979909825695914> هذا الزر ليس لك!", ephemeral: true }).catch(() => {});
   }
 
-  // إلغاء
+  // الغاء
   if (i.customId === "solo_roulette_cancel") {
-    // نفس صياغة الإلغاء الأصلية
-    await i.message.edit({ content: "<:icons8wrong100:1407439999611310130> تم إلغاء الجولة.", components: [], files: [] }).catch(() => {});
+    // نفس صياغة الالغاء الاصلية
+    await i.message.edit({ content: "<:icons8wrong1001:1415979909825695914> تم الغاء الجولة.", components: [], files: [] }).catch(() => {});
     await addBalance(session.userId, session.bet).catch(() => {});
     rouletteSessions.delete(msgId);
     return;
@@ -1227,7 +1227,7 @@ async function handleSoloRouletteButtons(i) {
   else if (i.customId.startsWith("solo_roulette_range_")) {
     const [min, max] = i.customId.split("_").slice(3).map(Number);
     won = number >= min && number <= max;
-    // multiplier حسب الرينج كما في الأصل
+    // multiplier حسب الرينج كما في الاصل
     const ranges = [
       { min: 1, max: 12, multiplier: 3 },
       { min: 13, max: 24, multiplier: 3 },
@@ -1239,7 +1239,7 @@ async function handleSoloRouletteButtons(i) {
     return;
   }
 
-  // نفس حسابات النسخة الأصلية
+  // نفس حسابات النسخة الاصلية
   const bet = session.bet;
   let net = won ? bet * multiplier : -bet;
 
@@ -1261,20 +1261,20 @@ async function handleSoloRouletteButtons(i) {
   // نفس النداء الثاني كما في الكود القديم
   await updateSoloStats(session.userId, "soloroulette", bet, won, net).catch(() => {});
 
-  // صورة النتيجة + زر إعادة المحاولة
+  // صورة النتيجة + زر اعادة المحاولة
   const resultImg = await renderRouletteResultWithMarker(number, session.userId).catch(() => null);
   const retryRow = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId("solo_retry_soloroulette")
-      .setLabel(" إعادة المحاولة")
+      .setLabel(" اعادة المحاولة")
       .setEmoji("1407461810566860941")
       .setStyle(ButtonStyle.Secondary)
   );
 
   await i.message.edit({
     content: won
-      ? `  فزت! <:icons8correct1001:1407440011183259699> الرقم: **${number}**`
-      : `  خسرت! <:icons8wrong100:1407439999611310130> الرقم: **${number}**`,
+      ? `  فزت! <:icons8correct1002:1415979896433278986> الرقم: **${number}**`
+      : `  خسرت! <:icons8wrong1001:1415979909825695914> الرقم: **${number}**`,
     files: resultImg ? [resultImg] : [],
     components: [retryRow]
   }).catch(() => {});
@@ -1291,8 +1291,8 @@ const slotSymbols = [
   { emoji: "🍒", name: "كرز", value: 1, weight: 25, rarity: "شائع" },
   { emoji: "🍋", name: "ليمون", value: 1, weight: 20, rarity: "شائع" },
   { emoji: "🍉", name: "بطيخ", value: 1, weight: 15, rarity: "غير شائع" },
-  { emoji: "💎", name: "ألماسة", value: 25, weight: 5, rarity: "نادر" },
-  { emoji: "👑", name: "تاج", value: 50, weight: 3, rarity: "أسطوري" },
+  { emoji: "💎", name: "الماسة", value: 25, weight: 5, rarity: "نادر" },
+  { emoji: "👑", name: "تاج", value: 50, weight: 3, rarity: "اسطوري" },
   { emoji: "🎰", name: "جاكبوت", value: 100, weight: 1, rarity: "جاكبوت" },
 ];
 
@@ -1322,15 +1322,15 @@ function getSlotResult(reels, bet) {
     return { isWin: true, multiplier: 100, message: "🎉 JACKPOT! فزت بـ 100x" };
   } else if (names.every(n => n === "تاج")) {
     return { isWin: true, multiplier: 50, message: "👑 ملكي! فزت بـ 50x" };
-  } else if (names.every(n => n === "ألماسة")) {
-    return { isWin: true, multiplier: 25, message: "💎 ألماسات! فزت بـ 25x" };
+  } else if (names.every(n => n === "الماسة")) {
+    return { isWin: true, multiplier: 25, message: "💎 الماسات! فزت بـ 25x" };
   } else if (allSame && allFruits) {
     return { isWin: true, multiplier: 10, message: `🍉 ${names[0]} ×3! فزت بـ 10x` };
   } else if (isAllDifferentFruits) {
     return { isWin: true, multiplier: 2, message: "🥗 3 فواكه متنوعة! فزت بـ 2x" };
   }
 
-  return { isWin: false, multiplier: 0, message: "<:icons8wrong100:1407439999611310130> خسرت! حاول مرة ثانية." };
+  return { isWin: false, multiplier: 0, message: "<:icons8wrong1001:1415979909825695914> خسرت! حاول مرة ثانية." };
 }
 
 async function renderSlotGame(user, bet, reels, result) {
@@ -1374,16 +1374,16 @@ async function startSlotMachine(interaction, bet) {
   const result = getSlotResult(reels, bet);
   const img = await renderSlotGame(interaction.user, bet, reels, result);
 
-  // payout = المبلغ النهائي المودَع (يشمل أصل الرهان إذا كان فوزاً)
+  // payout = المبلغ النهائي المودَع (يشمل اصل الرهان اذا كان فوزاً)
   const payout = result.isWin ? bet * result.multiplier : 0;
 
   if (result.isWin) {
-    // إيداع دفعة واحدة فقط دون إعادة bet منفصلة
+    // ايداع دفعة واحدة فقط دون اعادة bet منفصلة
     await updateBalanceWithLog(db, userId, payout, "🎰 سلوت فردي - فوز");
     await addBalance(userId,bet); 
     await updateSoloStats(userId, "soloslot", bet, true, payout);
   } else {
-    // لا نخصم مرة أخرى لأن الخصم تم عند التأكيد، نسجّل العملية فقط
+    // لا نخصم مرة اخرى لان الخصم تم عند التاكيد، نسجّل العملية فقط
     await db.collection("transactions").insertOne({
       userId,
       amount: -bet,
@@ -1393,11 +1393,11 @@ async function startSlotMachine(interaction, bet) {
     await updateSoloStats(userId, "soloslot", bet, false, 0);
   }
 
-  // زر إعادة المحاولة
+  // زر اعادة المحاولة
   const retryRow = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId("solo_retry_soloslot")
-      .setLabel("إعادة المحاولة")
+      .setLabel("اعادة المحاولة")
       .setEmoji("1407461810566860941")
       .setStyle(ButtonStyle.Secondary)
   );
@@ -1417,15 +1417,15 @@ async function startSlotMachine(interaction, bet) {
  * 🎁 Mystery Box — نسخة متوافقة مع الراوتر والهيلبرز
  ******************************************/
 
-// النتائج والأوزان
+// النتائج والاوزان
 const boxOptions = [
   { name: "مضاعفة ×2", type: "win",     multiplier: 2,   weight: 30 },
   { name: "مضاعفة ×3", type: "win",     multiplier: 3,   weight: 15 },
   { name: "صندوق فاضي", type: "lose",   multiplier: 0,   weight: 20 },
   { name: "خسارة جزئية", type: "lose",  multiplier: 0.5, weight: 15 },
   { name: "خسارة كاملة", type: "lose",  multiplier: 0,   weight: 10 },
-  { name: "مكافأة ثابتة", type: "bonus", amount: 10000,  weight: 5  },
-  { name: "تايم أوت", type: "timeout",  amount: 0,       weight: 5  }
+  { name: "مكافاة ثابتة", type: "bonus", amount: 10000,  weight: 5  },
+  { name: "تايم اوت", type: "timeout",  amount: 0,       weight: 5  }
 ];
 
 // تخزين رهانات الجولات حسب اللاعب
@@ -1472,11 +1472,11 @@ async function renderMysteryBoxResult(user, bet, box, payout, resultMsg) {
 }
 
 /******************************************
- * بداية الجولة — تُستدعى بعد تأكيد الرهان الموحد
- * لا تُنشئ أي مستمعات هنا، الراوتر يتكفّل بالأزرار
+ * بداية الجولة — تُستدعى بعد تاكيد الرهان الموحد
+ * لا تُنشئ اي مستمعات هنا، الراوتر يتكفّل بالازرار
  ******************************************/
 async function startSoloMystery(interaction, bet) {
-  // قد يكون تم defer سابقاً أثناء تأكيد الرهان
+  // قد يكون تم defer سابقاً اثناء تاكيد الرهان
   if (!interaction.replied && !interaction.deferred) {
     await interaction.deferUpdate({ ephemeral: true }).catch(() => {});
   }
@@ -1484,19 +1484,19 @@ async function startSoloMystery(interaction, bet) {
   // خزّن الرهان للاعب
   boxBets.set(interaction.user.id, bet);
 
-  // أزرار الصناديق
+  // ازرار الصناديق
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId("box_1").setLabel("صندوق").setStyle(ButtonStyle.Secondary).setEmoji("1407779540482265190"),
     new ButtonBuilder().setCustomId("box_2").setLabel("صندوق").setStyle(ButtonStyle.Secondary).setEmoji("1407779855764029570"),
     new ButtonBuilder().setCustomId("box_3").setLabel("صندوق").setStyle(ButtonStyle.Secondary).setEmoji("1407779532001247333"),
-    new ButtonBuilder().setCustomId("box_quit").setLabel("انسحاب").setStyle(ButtonStyle.Secondary).setEmoji("1407439999611310130")
+    new ButtonBuilder().setCustomId("box_quit").setLabel("انسحاب").setStyle(ButtonStyle.Secondary).setEmoji("1415979909825695914")
   );
 
   // قالب البداية
   const attachment = new AttachmentBuilder("./assets/templates/closedbox.png", { name: "mysterybox.png" });
 
   const introMessage = await interaction.channel.send({
-    content: "اختر أحد الصناديق الثلاثة 👇",
+    content: "اختر احد الصناديق الثلاثة 👇",
     components: [row],
     files: [attachment]
   });
@@ -1506,7 +1506,7 @@ async function startSoloMystery(interaction, bet) {
 }
 
 /******************************************
- * معالج الأزرار — يُربط عبر الراوتر:
+ * معالج الازرار — يُربط عبر الراوتر:
  * ui.buttonExact('box_quit', handleBoxButtons);
  * ui.buttonPrefix('box_', handleBoxButtons);
  ******************************************/
@@ -1516,10 +1516,10 @@ async function handleBoxButtons(i) {
 
   // حماية: زر ليس لصاحب الجولة
   if (!bet) {
-    return i.reply({ content: "<:icons8wrong100:1407439999611310130> هذا الزر ليس لك!", ephemeral: true }).catch(() => {});
+    return i.reply({ content: "<:icons8wrong1001:1415979909825695914> هذا الزر ليس لك!", ephemeral: true }).catch(() => {});
   }
 
-  // انسحاب: استرجاع الرهان وإغلاق الجولة
+  // انسحاب: استرجاع الرهان واغلاق الجولة
   if (i.customId === "box_quit") {
     await addBalance(userId, bet).catch(() => {});
     // تنظيف الحالة
@@ -1527,7 +1527,7 @@ async function handleBoxButtons(i) {
     const introKey = `${userId}_messageId`;
     const introMsgId = boxBets.get(introKey);
 
-    await i.update({ content: "<:icons8wrong100:1407439999611310130> تم الإنسحاب واسترجاع الرهان.", files: [], components: [] }).catch(() => {});
+    await i.update({ content: "<:icons8wrong1001:1415979909825695914> تم الانسحاب واسترجاع الرهان.", files: [], components: [] }).catch(() => {});
 
     if (introMsgId) {
       i.channel.messages.fetch(introMsgId).then(m => m.delete().catch(() => {})).catch(() => {});
@@ -1538,7 +1538,7 @@ async function handleBoxButtons(i) {
 
   // اختيار صندوق
   if (!["box_1", "box_2", "box_3"].includes(i.customId)) {
-    return i.reply({ content: "<:icons8wrong100:1407439999611310130> خيار غير معروف.", ephemeral: true }).catch(() => {});
+    return i.reply({ content: "<:icons8wrong1001:1415979909825695914> خيار غير معروف.", ephemeral: true }).catch(() => {});
   }
 
   await i.deferUpdate().catch(() => {});
@@ -1552,7 +1552,7 @@ async function handleBoxButtons(i) {
 
   switch (box.type) {
     case "win": {
-      // دفعة الفوز = bet × multiplier (تتضمن أصل الرهان والربح)
+      // دفعة الفوز = bet × multiplier (تتضمن اصل الرهان والربح)
       payout = Math.floor(bet * box.multiplier);
       resultMsg = `${box.name}! ربحت ${payout.toLocaleString("en-US")} ريال`;
       await updateBalanceWithLog(db, userId, payout, "🎁 صندوق الغموض - فوز");
@@ -1566,7 +1566,7 @@ async function handleBoxButtons(i) {
         resultMsg = `${box.name}! تم استرجاع ${payout.toLocaleString("en-US")} ريال (خسارة جزئية)`;
         await updateBalanceWithLog(db, userId, payout, "🎁 صندوق الغموض - خسارة جزئية");
       } else {
-        // خسارة كاملة: نسجل -bet لأن الخصم حدث مسبقاً من واجهة الرهان
+        // خسارة كاملة: نسجل -bet لان الخصم حدث مسبقاً من واجهة الرهان
         resultMsg = `${box.name}! خسرت ${bet.toLocaleString("en-US")} ريال`;
         await db.collection("transactions").insertOne({
           userId,
@@ -1578,22 +1578,22 @@ async function handleBoxButtons(i) {
       break;
     }
     case "bonus": {
-      // مكافأة ثابتة: (إرجاع الأصل + المكافأة) لضمان ربح صافٍ
-      // لتغييرها لمكافأة صافية فقط: اجعل payout = box.amount
+      // مكافاة ثابتة: (ارجاع الاصل + المكافاة) لضمان ربح صافٍ
+      // لتغييرها لمكافاة صافية فقط: اجعل payout = box.amount
       payout = Math.floor(bet + box.amount);
       resultMsg = `${box.name}! حصلت على ${box.amount.toLocaleString("en-US")} ريال`;
-      await updateBalanceWithLog(db, userId, payout, "🎁 صندوق الغموض - مكافأة");
+      await updateBalanceWithLog(db, userId, payout, "🎁 صندوق الغموض - مكافاة");
       break;
     }
 case "timeout": {
   payout = 0; // لا عائد
-  // نحاول إعطاء تايم أوت فعلي 5 دقائق
+  // نحاول اعطاء تايم اوت فعلي 5 دقائق
   let didTimeout = false;
   try {
     const guild = i.guild;
     if (guild) {
       const member = await guild.members.fetch(userId);
-      await member.timeout(5 * 60 * 1000, "🎁 صندوق الغموض - تايم أوت 5 دقائق");
+      await member.timeout(5 * 60 * 1000, "🎁 صندوق الغموض - تايم اوت 5 دقائق");
       didTimeout = true;
     }
   } catch (e) {
@@ -1608,13 +1608,13 @@ case "timeout": {
       reason: "🎁 صندوق الغموض - تايم اوت",
       timestamp: new Date()
     });
-    resultMsg = `${box.name}! تم تطبيق تايم أوت 5 دقائق.`; // نص النتيجة
+    resultMsg = `${box.name}! تم تطبيق تايم اوت 5 دقائق.`; // نص النتيجة
   } else {
-    // فشل التايم أوت → خصم ربع الرصيد
+    // فشل التايم اوت → خصم ربع الرصيد
     const balance = await getBalance(userId).catch(() => 0);
     const penalty = Math.max(0, Math.floor(balance * 0.25));
     if (penalty > 0) {
-      await updateBalanceWithLog(db, userId, -penalty, "🎁 صندوق الغموض - خصم ربع الرصيد (فشل التايم أوت)");
+      await updateBalanceWithLog(db, userId, -penalty, "🎁 صندوق الغموض - خصم ربع الرصيد (فشل التايم اوت)");
     }
     // سجل خسارة الرهان كعملية (اتساقاً مع بقية النتائج السلبية)
     await db.collection("transactions").insertOne({
@@ -1631,18 +1631,18 @@ case "timeout": {
 
   }
 
-  // تحديث الإحصائيات: نعتبر فوزاً إذا الدفعة النهائية > الرهان
+  // تحديث الاحصائيات: نعتبر فوزاً اذا الدفعة النهائية > الرهان
   const didWin = payout > bet;
   await updateSoloStats(userId, "solomystery", bet, didWin, payout).catch(() => {});
 
   // صورة النتيجة
   const img = await renderMysteryBoxResult(i.user, bet, box, payout, resultMsg);
 
-  // زر إعادة المحاولة
+  // زر اعادة المحاولة
   const retryRow = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId("solo_retry_solomystery")
-      .setLabel("إعادة المحاولة")
+      .setLabel("اعادة المحاولة")
       .setEmoji("1407461810566860941")
       .setStyle(ButtonStyle.Secondary)
   );
@@ -1717,19 +1717,19 @@ function getExpiryTimestamp(seconds) {
   return `<t:${Math.floor(Date.now() / 1000) + seconds}:R>`;
 }
 
-// أزرار حسب المرحلة
+// ازرار حسب المرحلة
 function buildButtonsForStage(stage) {
   if (stage === 1) {
     return new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId("bus_red").setLabel("🔴 أحمر").setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder().setCustomId("bus_black").setLabel("⚫ أسود").setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId("bus_red").setLabel("🔴 احمر").setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId("bus_black").setLabel("⚫ اسود").setStyle(ButtonStyle.Secondary),
       new ButtonBuilder().setCustomId("bus_quit").setLabel(" انسحاب").setStyle(ButtonStyle.Secondary).setEmoji("1408077754557136926")
     );
   }
   if (stage === 2) {
     return new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId("bus_high").setLabel(" أكبر").setStyle(ButtonStyle.Secondary).setEmoji("1407783383169503305"),
-      new ButtonBuilder().setCustomId("bus_low").setLabel(" أصغر").setStyle(ButtonStyle.Secondary).setEmoji("1407783374529237203"),
+      new ButtonBuilder().setCustomId("bus_high").setLabel(" اكبر").setStyle(ButtonStyle.Secondary).setEmoji("1407783383169503305"),
+      new ButtonBuilder().setCustomId("bus_low").setLabel(" اصغر").setStyle(ButtonStyle.Secondary).setEmoji("1407783374529237203"),
       new ButtonBuilder().setCustomId("bus_quit").setLabel(" انسحاب ×2").setStyle(ButtonStyle.Secondary).setEmoji("1408077754557136926")
     );
   }
@@ -1769,7 +1769,7 @@ async function renderRideBusGame(game, user, stage, revealedCards = []) {
   ctx.textAlign = "center";
   ctx.fillText(` Ride the Bus`, canvas.width / 2, 150);
 
-  // أماكن البطاقات
+  // اماكن البطاقات
   const cardPositions = [
     { x: 200, y: 250 },
     { x: 500, y: 250 },
@@ -1809,24 +1809,24 @@ async function renderRideBusGame(game, user, stage, revealedCards = []) {
   ctx.textAlign = "center";
   ctx.fillText(user.username, 750, 1000);
 
-  // الأرباح لو انسحب (من المرحلة 2)
+  // الارباح لو انسحب (من المرحلة 2)
   if (stage >= 2) {
     const multipliers = { 2: 2, 3: 5, 4: 10 };
     const currentReward = game.bet * (multipliers[stage] || 1);
     ctx.font = "Bold 50px Cairo";
     ctx.fillStyle = "#8FD6FF";
     ctx.textAlign = "center";
-    ctx.fillText(` الأرباح لو انسحبت: ${currentReward.toLocaleString("en-US")} ريال`, canvas.width / 2 + 25, 215);
+    ctx.fillText(` الارباح لو انسحبت: ${currentReward.toLocaleString("en-US")} ريال`, canvas.width / 2 + 25, 215);
   }
 
   return new AttachmentBuilder(await canvas.encode("png"), { name: "ridebus.png" });
 }
 
-// عرض مرحلة مع صورة + أزرار + مؤقّت
+// عرض مرحلة مع صورة + ازرار + مؤقّت
 async function pushStageUI(game, user, revealed) {
   if (game.timer) try { clearTimeout(game.timer); } catch {}
 
-  // تطبيع مصفوفة الكشف إلى 4 خانات
+  // تطبيع مصفوفة الكشف الى 4 خانات
   const norm = [
     revealed?.[0] || null,
     revealed?.[1] || null,
@@ -1837,8 +1837,8 @@ async function pushStageUI(game, user, revealed) {
   const img = await renderRideBusGame({ bet: game.bet }, user, game.stage, norm);
   const contentByStage = {
     1: "🎯 ما هو لون البطاقة القادمة؟\n⏳ ينتهي خلال " + getExpiryTimestamp(20),
-    2: "🔢 هل البطاقة التالية أكبر أم أصغر؟\n⏳ ينتهي خلال " + getExpiryTimestamp(20),
-    3: "🎯 هل البطاقة القادمة داخل أو خارج النطاق؟\n⏳ ينتهي خلال " + getExpiryTimestamp(20),
+    2: "🔢 هل البطاقة التالية اكبر ام اصغر؟\n⏳ ينتهي خلال " + getExpiryTimestamp(20),
+    3: "🎯 هل البطاقة القادمة داخل او خارج النطاق؟\n⏳ ينتهي خلال " + getExpiryTimestamp(20),
     4: "🎯 ما هو نوع البطاقة القادمة؟\n⏳ ينتهي خلال " + getExpiryTimestamp(20)
   }[game.stage] || "";
 
@@ -1852,7 +1852,7 @@ async function pushStageUI(game, user, revealed) {
     if (!still || still.stage !== game.stage) return;
     rideBusGames.delete(game.userId);
     const retryRow = new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId("solo_retry_solocard").setLabel(" إعادة المحاولة").setEmoji("1407461810566860941").setStyle(ButtonStyle.Secondary)
+      new ButtonBuilder().setCustomId("solo_retry_solocard").setLabel(" اعادة المحاولة").setEmoji("1407461810566860941").setStyle(ButtonStyle.Secondary)
     );
     await safeEditMessage(game.channelId, game.msgId, { content: `⏰ انتهى الوقت! خسرت الرهان.`, files: [], components: [retryRow] });
     setTimeout(() => safeDeleteMessage(game.channelId, game.msgId), 15000);
@@ -1861,7 +1861,7 @@ async function pushStageUI(game, user, revealed) {
   return true;
 }
 
-// تعطيل سريع لكل الأزرار لمنع الضغطات المتعددة
+// تعطيل سريع لكل الازرار لمنع الضغطات المتعددة
 async function disableAllButtons(i) {
   try {
     const rows = (i.message.components || []).map(r => {
@@ -1873,7 +1873,7 @@ async function disableAllButtons(i) {
   } catch {}
 }
 
-// بدء اللعبة (يُستدعى بعد تأكيد الرهان)
+// بدء اللعبة (يُستدعى بعد تاكيد الرهان)
 async function startSoloBus(interaction, bet) {
   const userId = interaction.user.id;
   const initMsg = await interaction.channel.send({ content: "⏳ جاري تجهيز اللعبة..." });
@@ -1882,14 +1882,14 @@ async function startSoloBus(interaction, bet) {
   await pushStageUI(game, interaction.user, [null, null, null, null]);
 }
 
-// معالج الأزرار
+// معالج الازرار
 async function handleBusButtons(i) {
   if (!i.isButton()) return;
   try { if (!i.deferred && !i.replied) await i.deferUpdate(); } catch {}
 
   const userId = i.user.id;
   const game = rideBusGames.get(userId);
-  if (!game) return i.reply?.({ content: "⏳ هذه الجولة انتهت أو غير مملوكة لك.", ephemeral: true }).catch(() => {});
+  if (!game) return i.reply?.({ content: "⏳ هذه الجولة انتهت او غير مملوكة لك.", ephemeral: true }).catch(() => {});
   if (i.message.id !== game.msgId) return i.reply?.({ content: "⏳ تم تحديث الرسالة، تفاعل مع الرسالة الحالية.", ephemeral: true }).catch(() => {});
   if (game.lock) return; game.lock = true;
 
@@ -1909,28 +1909,28 @@ async function handleBusButtons(i) {
     ];
     const img = revealed ? await renderRideBusGame(game, i.user, Math.min(game.stage, 4), norm) : null;
     const retryRow = new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId("solo_retry_solocard").setLabel(" إعادة المحاولة").setEmoji("1407461810566860941").setStyle(ButtonStyle.Secondary)
+      new ButtonBuilder().setCustomId("solo_retry_solocard").setLabel(" اعادة المحاولة").setEmoji("1407461810566860941").setStyle(ButtonStyle.Secondary)
     );
     await safeEditMessage(game.channelId, game.msgId, { content, files: img ? [img] : [], components: [retryRow] });
     setTimeout(() => safeDeleteMessage(game.channelId, game.msgId), 15000);
   };
 
   try {
-    // انسحاب في أي مرحلة
+    // انسحاب في اي مرحلة
     if (i.customId === "bus_quit") {
       const multipliers = { 1:1, 2:2, 3:5, 4:10 };
       const refund = bet * (multipliers[game.stage] || 1);
       await updateBalanceWithLog(db, userId, refund, `🃏 Ride the Bus - انسحاب ×${multipliers[game.stage] || 1}`);
       await addBalance(userId,bet);
       await updateSoloStats(userId, "solobus", bet, false, refund);
-      return endWithRetry(`<:icons8wrong100:1407439999611310130> انسحبت من التحدي! تم استرجاع ${refund.toLocaleString("en-US")} ريال.`, null);
+      return endWithRetry(`<:icons8wrong1001:1415979909825695914> انسحبت من التحدي! تم استرجاع ${refund.toLocaleString("en-US")} ريال.`, null);
     }
 
     // المرحلة 1: لون البطاقة
     if (game.stage === 1 && (i.customId === "bus_red" || i.customId === "bus_black")) {
       const guess = i.customId === "bus_red" ? "red" : "black";
       const card1 = drawUniqueCard(drawn);
-      if (!card1) return endWithRetry(`<:icons8wrong100:1407439999611310130> خطأ في السحب.`, null);
+      if (!card1) return endWithRetry(`<:icons8wrong1001:1415979909825695914> خطا في السحب.`, null);
       drawn.push(card1);
 
       const isRed = card1.suit === "♥️" || card1.suit === "♦️";
@@ -1938,25 +1938,25 @@ async function handleBusButtons(i) {
       if (!ok) {
         await db.collection("transactions").insertOne({ userId, amount: -bet, reason: "🃏 Ride the Bus - خسارة", timestamp: new Date() });
         await updateSoloStats(userId, "solobus", bet, false, 0);
-        return endWithRetry(`<:icons8wrong100:1407439999611310130> توقّعك خاطئ!`, [card1, null, null, null]);
+        return endWithRetry(`<:icons8wrong1001:1415979909825695914> توقّعك خاطئ!`, [card1, null, null, null]);
       }
 
       game.stage = 2;
       return pushStageUI(game, i.user, [drawn[0], null, null, null]);
     }
 
-    // المرحلة 2: أكبر/أصغر
+    // المرحلة 2: اكبر/اصغر
     if (game.stage === 2 && (i.customId === "bus_high" || i.customId === "bus_low")) {
       const prev = drawn[0];
       const card2 = drawUniqueCard(drawn, [prev.value]);
-      if (!card2) return endWithRetry(`<:icons8wrong100:1407439999611310130> خطأ في السحب.`, [drawn[0], null, null, null]);
+      if (!card2) return endWithRetry(`<:icons8wrong1001:1415979909825695914> خطا في السحب.`, [drawn[0], null, null, null]);
       drawn.push(card2);
 
       const ok = i.customId === "bus_high" ? card2.value > prev.value : card2.value < prev.value;
       if (!ok) {
         await db.collection("transactions").insertOne({ userId, amount: -bet, reason: "🃏 Ride the Bus - خسارة", timestamp: new Date() });
         await updateSoloStats(userId, "solobus", bet, false, 0);
-        return endWithRetry(`<:icons8wrong100:1407439999611310130> توقّعك خاطئ!`, [drawn[0], card2, null, null]);
+        return endWithRetry(`<:icons8wrong1001:1415979909825695914> توقّعك خاطئ!`, [drawn[0], card2, null, null]);
       }
 
       game.stage = 3;
@@ -1968,7 +1968,7 @@ async function handleBusButtons(i) {
       const values = [drawn[0].value, drawn[1].value];
       const min = Math.min(...values), max = Math.max(...values);
       const card3 = drawUniqueCard(drawn, values);
-      if (!card3) return endWithRetry(`<:icons8wrong100:1407439999611310130> خطأ في السحب.`, [drawn[0], drawn[1], null, null]);
+      if (!card3) return endWithRetry(`<:icons8wrong1001:1415979909825695914> خطا في السحب.`, [drawn[0], drawn[1], null, null]);
       drawn.push(card3);
 
       const isInside = card3.value > min && card3.value < max;
@@ -1976,7 +1976,7 @@ async function handleBusButtons(i) {
       if (!ok) {
         await db.collection("transactions").insertOne({ userId, amount: -bet, reason: "🃏 Ride the Bus - خسارة", timestamp: new Date() });
         await updateSoloStats(userId, "solobus", bet, false, 0);
-        return endWithRetry(`<:icons8wrong100:1407439999611310130> توقّعك خاطئ!`, [drawn[0], drawn[1], card3, null]);
+        return endWithRetry(`<:icons8wrong1001:1415979909825695914> توقّعك خاطئ!`, [drawn[0], drawn[1], card3, null]);
       }
 
       game.stage = 4;
@@ -1987,7 +1987,7 @@ async function handleBusButtons(i) {
     if (game.stage === 4 && i.customId.startsWith("bus_")) {
       const guessSuit = i.customId.replace("bus_", "");
       const card4 = drawUniqueCard(drawn);
-      if (!card4) return endWithRetry(`<:icons8wrong100:1407439999611310130> خطأ في السحب.`, [drawn[0], drawn[1], drawn[2], null]);
+      if (!card4) return endWithRetry(`<:icons8wrong1001:1415979909825695914> خطا في السحب.`, [drawn[0], drawn[1], drawn[2], null]);
 
       const win = card4.suit === guessSuit;
       if (win) {
@@ -2009,7 +2009,7 @@ async function handleBusButtons(i) {
       } else {
         await db.collection("transactions").insertOne({ userId, amount: -bet, reason: "🃏 Ride the Bus - خسارة", timestamp: new Date() });
         await updateSoloStats(userId, "solobus", bet, false, 0);
-        return endWithRetry(`<:icons8wrong100:1407439999611310130> توقّعك خاطئ!`, [drawn[0], drawn[1], drawn[2], card4]);
+        return endWithRetry(`<:icons8wrong1001:1415979909825695914> توقّعك خاطئ!`, [drawn[0], drawn[1], drawn[2], card4]);
       }
     }
 
@@ -2059,7 +2059,7 @@ async function preloadCards() {
   blackjackCardsPreloaded = true;
 }
 
-// 🃏 إنشاء دكة كاملة (52 ورقة)
+// 🃏 انشاء دكة كاملة (52 ورقة)
 function createDeck() {
   const deck = [];
   for (const suit of suits) {
@@ -2101,18 +2101,18 @@ function drawCard(ctx, card, x, y) {
   const file = cardToFile(card);
   const img = assets[file];
   if (!img) {
-    console.error("<:icons8wrong100:1407439999611310130> صورة الكرت مفقودة:", file);
-    // فولبك: ظهر الكرت إن توفر
+    console.error("<:icons8wrong1001:1415979909825695914> صورة الكرت مفقودة:", file);
+    // فولبك: ظهر الكرت ان توفر
     if (assets["cardback.png"]) ctx.drawImage(assets["cardback.png"], x, y, CARD_WIDTH, CARD_HEIGHT);
     return;
   }
   ctx.drawImage(img, x, y, CARD_WIDTH, CARD_HEIGHT);
 }
 
-// حالة الألعاب: userId -> game
+// حالة الالعاب: userId -> game
 const blackjackGames = new Map();
 
-// 🎮 بدء لعبة جديدة (تُستدعى بعد تأكيد الرهان الموحّد)
+// 🎮 بدء لعبة جديدة (تُستدعى بعد تاكيد الرهان الموحّد)
 async function startBlackjackSolo(interaction, bet) {
   if (!interaction.replied && !interaction.deferred) interaction.deferUpdate().catch(() => {});
   // ضمان توفر الخلفيات والكروت
@@ -2140,7 +2140,7 @@ async function startBlackjackSolo(interaction, bet) {
   await sendBlackjackMessage(interaction.channel, game, interaction.user);
 }
 
-// 🖼️ رسم القالب + الأوراق
+// 🖼️ رسم القالب + الاوراق
 async function renderBlackjack(game, user) {
   const bg = assets.blackjack;
   if (!bg) throw new Error("Blackjack background missing");
@@ -2186,7 +2186,7 @@ async function renderBlackjack(game, user) {
   return canvas.toBuffer("image/png");
 }
 
-// 📤 إرسال الرسالة الأولى
+// 📤 ارسال الرسالة الاولى
 async function sendBlackjackMessage(channel, game, user) {
   const buffer = await renderBlackjack(game, user);
   const attachment = new AttachmentBuilder(buffer, { name: "blackjack.png" });
@@ -2194,7 +2194,7 @@ async function sendBlackjackMessage(channel, game, user) {
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId("bj_hit").setLabel(" سحب ").setStyle(ButtonStyle.Secondary).setEmoji("1407789070494597281"),
     new ButtonBuilder().setCustomId("bj_stand").setLabel(" تثبيت ").setStyle(ButtonStyle.Secondary).setEmoji("1407789061510402161"),
-    new ButtonBuilder().setCustomId("bj_quit").setLabel(" انسحاب ").setStyle(ButtonStyle.Secondary).setEmoji("1407439999611310130")
+    new ButtonBuilder().setCustomId("bj_quit").setLabel(" انسحاب ").setStyle(ButtonStyle.Secondary).setEmoji("1415979909825695914")
   );
 
   const msg = await channel.send({ files: [attachment], components: [row] });
@@ -2212,7 +2212,7 @@ async function handleBjHit(i) {
   await i.deferUpdate().catch(() => {});
   const id = i.user.id;
   const game = blackjackGames.get(id);
-  if (!game) return i.reply({ content: "<:icons8wrong100:1407439999611310130> لا يوجد لعبة جارية.", ephemeral: true }).catch(() => {});
+  if (!game) return i.reply({ content: "<:icons8wrong1001:1415979909825695914> لا يوجد لعبة جارية.", ephemeral: true }).catch(() => {});
 
   // سحب ورقة للاعب
   game.player.push(drawFromDeck(game.deck));
@@ -2237,7 +2237,7 @@ async function handleBjHit(i) {
     const retryRow = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setCustomId("solo_retry_soloblackjack")
-        .setLabel("إعادة المحاولة")
+        .setLabel("اعادة المحاولة")
         .setEmoji("1407461810566860941")
         .setStyle(ButtonStyle.Secondary)
     );
@@ -2259,7 +2259,7 @@ async function handleBjStand(i) {
   await i.deferUpdate().catch(() => {});
   const id = i.user.id;
   const game = blackjackGames.get(id);
-  if (!game) return i.reply({ content: "<:icons8wrong100:1407439999611310130> لا يوجد لعبة جارية.", ephemeral: true }).catch(() => {});
+  if (!game) return i.reply({ content: "<:icons8wrong1001:1415979909825695914> لا يوجد لعبة جارية.", ephemeral: true }).catch(() => {});
 
   // سحب للبوت حتى 17+
   let botTotal = calcHand(game.bot);
@@ -2273,7 +2273,7 @@ async function handleBjStand(i) {
   let payout = 0; // المبلغ المودَع عبر السجل
 
   if (playerTotal > 21) {
-    // نظرياً لن يصل هنا لأن معالجة bust تمت في hit، لكن نُبقيه احتياطاً
+    // نظرياً لن يصل هنا لان معالجة bust تمت في hit، لكن نُبقيه احتياطاً
     await db.collection("transactions").insertOne({
       userId: id,
       amount: -game.bet,
@@ -2312,7 +2312,7 @@ async function handleBjStand(i) {
   const retryRow = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId("solo_retry_soloblackjack")
-      .setLabel("إعادة المحاولة")
+      .setLabel("اعادة المحاولة")
       .setEmoji("1407461810566860941")
       .setStyle(ButtonStyle.Secondary)
   );
@@ -2328,22 +2328,22 @@ async function handleBjQuit(i) {
   await i.deferUpdate().catch(() => {});
   const id = i.user.id;
   const game = blackjackGames.get(id);
-  if (!game) return i.reply({ content: "<:icons8wrong100:1407439999611310130> لا يوجد لعبة جارية.", ephemeral: true }).catch(() => {});
+  if (!game) return i.reply({ content: "<:icons8wrong1001:1415979909825695914> لا يوجد لعبة جارية.", ephemeral: true }).catch(() => {});
 
-  // استرجاع الرهان (إلغاء)
+  // استرجاع الرهان (الغاء)
   await updateBalanceWithLog(db, id, game.bet, "♠️ Blackjack - انسحاب").catch(() => {});
   await updateSoloStats(id, "blackjack", game.bet, false, game.bet).catch(() => {});
   blackjackGames.delete(id);
 
   return game.msg.edit({
-    content: `<:icons8wrong100:1407439999611310130> انسحبت من اللعبة وتم استرجاع ${game.bet.toLocaleString("en-US")} ريال.`,
+    content: `<:icons8wrong1001:1415979909825695914> انسحبت من اللعبة وتم استرجاع ${game.bet.toLocaleString("en-US")} ريال.`,
     files: [],
     components: []
   }).catch(() => {});
 }
 
 /******************************************
- * 🔫 Buckshot Solo — متوافق مع الراوتر + إصلاح الأصفاد والمنشار
+ * 🔫 Buckshot Solo — متوافق مع الراوتر + اصلاح الاصفاد والمنشار
  ******************************************/
 
 const buckshotGames = new Map(); // userId -> game
@@ -2361,7 +2361,7 @@ function startBuckshotSolo(interaction, bet) {
     bet,
     deck: getBulletDeck(),
     tools: getRandomTools(),
-    // تعديلات: تحويل الأصفاد إلى عدادات، والمنشار كمُعزز للمحاولة القادمة فقط
+    // تعديلات: تحويل الاصفاد الى عدادات، والمنشار كمُعزز للمحاولة القادمة فقط
     buffs: {
       playerDouble: false,      // منشار اللاعب: يضاعف ضرر "المحاولة" القادمة فقط
       botDouble: false,         // منشار البوت: يضاعف ضرر "المحاولة" القادمة فقط
@@ -2377,7 +2377,7 @@ function startBuckshotSolo(interaction, bet) {
 }
 
 function getRandomTools() {
-  const items = ["مكبر", "منشار", "دواء", "بيرة", "أصفاد"];
+  const items = ["مكبر", "منشار", "دواء", "بيرة", "اصفاد"];
   const tools = {};
   for (const item of items) tools[item] = Math.floor(Math.random() * 2);
   return tools;
@@ -2399,7 +2399,7 @@ function toolMap(tool) {
     "منشار": "saw",
     "دواء": "pills",
     "مكبر": "scope",
-    "أصفاد": "cuffs"
+    "اصفاد": "cuffs"
   }[tool];
 }
 
@@ -2409,23 +2409,23 @@ function getToolEmoji(tool) {
     منشار: "1407792789646868562",
     دواء: "1407792778167058514",
     بيرة: "1407792769551958046",
-    أصفاد: "1407792760756506665"
+    اصفاد: "1407792760756506665"
   };
   return { id: emojis[tool] };
 }
 
 /**
- * منشار: يُستهلك دائماً في أول "محاولة" تالية، ويُضاعف الضرر فقط إذا كانت الطلقة حقيقية
- * يعيد: 2 إذا (منشار مفعّل + طلقة حقيقية)، 1 إذا (طلقة حقيقية بدون منشار)، 0 إذا (طلقة فارغة)
+ * منشار: يُستهلك دائماً في اول "محاولة" تالية، ويُضاعف الضرر فقط اذا كانت الطلقة حقيقية
+ * يعيد: 2 اذا (منشار مفعّل + طلقة حقيقية)، 1 اذا (طلقة حقيقية بدون منشار)، 0 اذا (طلقة فارغة)
  */
 function nextShotDamageAndConsume(buffs, who, isReal) {
   const key = who === "player" ? "playerDouble" : "botDouble";
   const boosted = !!buffs[key];
-  if (boosted) buffs[key] = false; // يُستهلك دائماً عند أول محاولة تالية (حتى لو فارغة)
+  if (boosted) buffs[key] = false; // يُستهلك دائماً عند اول محاولة تالية (حتى لو فارغة)
   return isReal ? (boosted ? 2 : 1) : 0;
 }
 
-// تحديد الفائز بالأكثر قلوباً (مع دعم التعادل)
+// تحديد الفائز بالاكثر قلوباً (مع دعم التعادل)
 function decideWinner(game) {
   if (game.playerHearts <= 0 || game.botHearts <= 0) {
     if (game.playerHearts > game.botHearts) return "player";
@@ -2471,7 +2471,7 @@ async function sendBuckshotGameUI(interactionOrMessage, userId, log = null) {
     if (icon) ctx.drawImage(icon, x, y, 65, 65);
   }
 
-  // الأدوات (يمين)
+  // الادوات (يمين)
   const tools = Object.entries(game.tools);
   for (let i = 0; i < tools.length; i++) {
     let col = i % 2;
@@ -2526,12 +2526,12 @@ async function sendBuckshotGameUI(interactionOrMessage, userId, log = null) {
   const buffer = canvas.toBuffer("image/png");
   const file = new AttachmentBuilder(buffer, { name: "buckshot.png" });
 
-  // أزرار اللعب
+  // ازرار اللعب
   const isPlayerTurn = game.turn === "player";
   const mainRow = new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId("buck_shoot_bot").setLabel(" بوت").setStyle(ButtonStyle.Secondary).setDisabled(!isPlayerTurn).setEmoji("1407795197760503919"),
     new ButtonBuilder().setCustomId("buck_shoot_self").setLabel(" نفسك").setStyle(ButtonStyle.Secondary).setDisabled(!isPlayerTurn).setEmoji("1407795197760503919"),
-    new ButtonBuilder().setCustomId("buck_quit").setLabel("انسحب").setStyle(ButtonStyle.Secondary).setDisabled(!isPlayerTurn).setEmoji("1407439999611310130")
+    new ButtonBuilder().setCustomId("buck_quit").setLabel("انسحب").setStyle(ButtonStyle.Secondary).setDisabled(!isPlayerTurn).setEmoji("1415979909825695914")
   );
 
   const toolRow = new ActionRowBuilder().addComponents(
@@ -2560,7 +2560,7 @@ async function handleBuckshotSoloButtons(i) {
   if (!i.isButton()) return;
   const userId = i.user.id;
   const game = buckshotGames.get(userId);
-  if (!game) return i.reply({ content: "<:icons8wrong100:1407439999611310130> لا يوجد لعبة جارية.", ephemeral: true }).catch(() => {});
+  if (!game) return i.reply({ content: "<:icons8wrong1001:1415979909825695914> لا يوجد لعبة جارية.", ephemeral: true }).catch(() => {});
   if (game.turn !== "player" && !i.customId.startsWith("buck_tool_")) {
     return i.reply({ content: "⏳ انتظر دورك.", ephemeral: true }).catch(() => {});
   }
@@ -2572,15 +2572,15 @@ async function handleBuckshotSoloButtons(i) {
     await updateSoloStats(userId, "buckshot", game.bet, false, game.bet).catch(() => {});
     buckshotGames.delete(userId);
     return game.msg.edit({
-      content: `<:icons8wrong100:1407439999611310130> انسحبت من اللعبة وتم استرجاع ${game.bet.toLocaleString("en-US")} ريال.`,
+      content: `<:icons8wrong1001:1415979909825695914> انسحبت من اللعبة وتم استرجاع ${game.bet.toLocaleString("en-US")} ريال.`,
       files: [],
       components: []
     }).catch(() => {});
   }
 
-  // أدوات
+  // ادوات
   if (i.customId.startsWith("buck_tool_")) {
-    if (game.turn !== "player") return; // لا استخدام أدوات خارج الدور
+    if (game.turn !== "player") return; // لا استخدام ادوات خارج الدور
     const tool = i.customId.replace("buck_tool_", "");
     if (!game.tools[tool] || game.tools[tool] <= 0) return;
 
@@ -2606,17 +2606,17 @@ async function handleBuckshotSoloButtons(i) {
       }
       const removed = game.deck.pop();
       msg = ` استخدمت بيرة وتم حذف الطلقة التالية (${removed})!`;
-    } else if (tool === "أصفاد") {
+    } else if (tool === "اصفاد") {
       game.buffs.botCuffedSkips = (game.buffs.botCuffedSkips || 0) + 1; // يسقط دور البوت مرة واحدة
-      msg = " قيدت البوت بالأصفاد! تقدر تلعب جولتين ورا بعض!   .";
+      msg = " قيدت البوت بالاصفاد! تقدر تلعب جولتين ورا بعض!   .";
     }
 
     return sendBuckshotGameUI(i, userId, msg);
   }
 
-  // إطلاق النار
+  // اطلاق النار
   if (["buck_shoot_self", "buck_shoot_bot"].includes(i.customId)) {
-    // إعادة تعبئة إذا فرغت الطلقات الحقيقية
+    // اعادة تعبئة اذا فرغت الطلقات الحقيقية
     if (game.deck.filter(b => b === "حقيقية").length === 0) {
       game.deck = getBulletDeck();
       grantRandomTools(game);
@@ -2632,43 +2632,43 @@ async function handleBuckshotSoloButtons(i) {
     const targetKey = isSelf ? "playerHearts" : "botHearts";
     const isReal = shot === "حقيقية";
 
-    // ضرر المنشار الموثوق (يستهلك فور أول محاولة)
+    // ضرر المنشار الموثوق (يستهلك فور اول محاولة)
     const damage = nextShotDamageAndConsume(game.buffs, "player", isReal);
 
     let log = ` اطلقت ${isSelf ? "على نفسك" : "على البوت"} وكانت `;
     if (isReal) {
       game[targetKey] -= damage;
       log += `طلقة حقيقية! -${damage} `;
-      // انتقال الدور أساساً إلى البوت
+      // انتقال الدور اساساً الى البوت
       game.turn = "bot";
     } else {
       log += `طلقة فارغة.`;
-      // عند الفراغ: إن كانت على نفسك يبقى الدور لك، وإلا ينتقل للبوت
+      // عند الفراغ: ان كانت على نفسك يبقى الدور لك، والا ينتقل للبوت
       game.turn = isSelf ? "player" : "bot";
     }
 
-    // تطبيق الأصفاد: إسقاط دور البوت مرة واحدة فقط
+    // تطبيق الاصفاد: اسقاط دور البوت مرة واحدة فقط
     if (game.turn === "bot" && (game.buffs.botCuffedSkips || 0) > 0) {
       game.buffs.botCuffedSkips--;
       game.turn = "player";
-      log += `\n (الأصفاد فعّالة: سقط دور البوت، دورك مرة ثانية)`;
+      log += `\n (الاصفاد فعّالة: سقط دور البوت، دورك مرة ثانية)`;
     }
 
-    // مكافأة قلوب منخفضة مرة واحدة
+    // مكافاة قلوب منخفضة مرة واحدة
     if ((game.playerHearts <= 3 || game.botHearts <= 3) && !game.gaveLowHpBonus) {
       grantRandomTools(game);
       game.gaveLowHpBonus = true;
-      log += `\n تم توزيع أدوات إضافية بسبب القلوب القليلة!`;
+      log += `\n تم توزيع ادوات اضافية بسبب القلوب القليلة!`;
     }
 
-    // حسم النتيجة إن انتهت
+    // حسم النتيجة ان انتهت
     const result = decideWinner(game);
     if (result) {
       await finishBuckshotGame(game, result, log);
       return;
     }
 
-    // تشغيل البوت إن كان دوره
+    // تشغيل البوت ان كان دوره
     sendBuckshotGameUI(i, userId, log);
     if (game.turn === "bot") setTimeout(() => botPlay(userId), 1200);
   }
@@ -2722,7 +2722,7 @@ async function finishBuckshotGame(game, result, log) {
   const retryRow = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId("solo_retry_solobuckshot")
-      .setLabel("إعادة المحاولة")
+      .setLabel("اعادة المحاولة")
       .setEmoji("1407461810566860941")
       .setStyle(ButtonStyle.Secondary)
   );
@@ -2737,17 +2737,17 @@ function botPlay(userId) {
   const game = buckshotGames.get(userId);
   if (!game || game.turn !== "bot") return;
 
-  // استخدام أدوات للبوت
+  // استخدام ادوات للبوت
   const choice = Math.random();
   if (game.botHearts < 6 && game.tools.دواء > 0) {
     game.botHearts++; game.tools.دواء--;
   } else if (choice < 0.2 && game.tools.منشار > 0) {
     game.tools.منشار--; game.buffs.botDouble = true; // منشار للبوت — للمحاولة القادمة فقط
-  } else if (choice < 0.4 && game.tools.أصفاد > 0) {
-    game.tools.أصفاد--; game.buffs.playerCuffedSkips = (game.buffs.playerCuffedSkips || 0) + 1; // يسقط دور اللاعب مرة واحدة
+  } else if (choice < 0.4 && game.tools.اصفاد > 0) {
+    game.tools.اصفاد--; game.buffs.playerCuffedSkips = (game.buffs.playerCuffedSkips || 0) + 1; // يسقط دور اللاعب مرة واحدة
   }
 
-  // إعادة تعبئة عند نفاد الحقيقي
+  // اعادة تعبئة عند نفاد الحقيقي
   if (game.deck.filter(b => b === "حقيقية").length === 0) {
     game.deck = getBulletDeck();
     grantRandomTools(game);
@@ -2757,7 +2757,7 @@ function botPlay(userId) {
     grantRandomTools(game);
   }
 
-  // اختيار هدف البوت: إذا كل الباقي حقيقي، غالباً يطلق على نفسه ليستمر
+  // اختيار هدف البوت: اذا كل الباقي حقيقي، غالباً يطلق على نفسه ليستمر
   const onlyReal = game.deck.every(b => b === "حقيقية");
   const targetKey = onlyReal ? "botHearts" : "playerHearts";
   const isSelf = targetKey === "botHearts";
@@ -2767,7 +2767,7 @@ function botPlay(userId) {
   // ضرر المنشار للبوت
   const damage = nextShotDamageAndConsume(game.buffs, "bot", isReal);
 
-  let log = ` البوت أطلق ${isSelf ? "على نفسه" : "عليك"} وكانت `;
+  let log = ` البوت اطلق ${isSelf ? "على نفسه" : "عليك"} وكانت `;
   if (isReal) {
     game[targetKey] -= damage;
     log += `طلقة حقيقية! -${damage} `;
@@ -2783,11 +2783,11 @@ function botPlay(userId) {
     }
   }
 
-  // إذا اللاعب مقيّد: إسقاط دوره مرة واحدة ثم متابعة البوت
+  // اذا اللاعب مقيّد: اسقاط دوره مرة واحدة ثم متابعة البوت
   if (game.turn === "player" && (game.buffs.playerCuffedSkips || 0) > 0) {
     game.buffs.playerCuffedSkips--;
     game.turn = "bot";
-    log += `\n (الأصفاد فعّالة عليك: سقط دورك، دور البوت مستمر)`;
+    log += `\n (الاصفاد فعّالة عليك: سقط دورك، دور البوت مستمر)`;
     return setTimeout(() => botPlay(userId), 900);
   }
 
@@ -2811,13 +2811,13 @@ const activeLobbies = {};
 const encodeId = (s) => String(s).replace(/_/g, "-");
 const decodeId = (s) => String(s).replace(/-/g, "_");
 
-// أدوات بناء الواجهة
+// ادوات بناء الواجهة
 function buildLobbyRow(isFull = false) {
   return new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId("lobby_join").setLabel(" انضمام").setStyle(ButtonStyle.Secondary).setEmoji("1408077902859472966").setDisabled(isFull),
     new ButtonBuilder().setCustomId("lobby_bet").setLabel(" تغيير الرهان").setStyle(ButtonStyle.Secondary).setEmoji("1408077696688459836"),
     new ButtonBuilder().setCustomId("lobby_leave").setLabel(" انسحاب").setStyle(ButtonStyle.Secondary).setEmoji("1408077754557136926"),
-    new ButtonBuilder().setCustomId("lobby_start").setLabel(" ابدأ اللعبة").setStyle(ButtonStyle.Secondary).setEmoji("1408080743971950653")
+    new ButtonBuilder().setCustomId("lobby_start").setLabel(" ابدا اللعبة").setStyle(ButtonStyle.Secondary).setEmoji("1408080743971950653")
   );
 }
 
@@ -2851,7 +2851,7 @@ async function handleSelectMultiGame(i) {
   const gameInfo = multiGamesMap[gameId];
   if (!gameInfo) return;
 
-  // أغلق أي لوبي سابق في نفس القناة
+  // اغلق اي لوبي سابق في نفس القناة
   if (activeLobbies[i.channel.id]) delete activeLobbies[i.channel.id];
 
   const lobby = {
@@ -2879,14 +2879,14 @@ async function handleSelectMultiGame(i) {
   if (!sent) return;
   lobby.messageId = sent.id;
 
-  // إغلاق تلقائي بعد 90 ثانية إن لم تبدأ اللعبة
+  // اغلاق تلقائي بعد 90 ثانية ان لم تبدا اللعبة
   lobby.timeout = setTimeout(() => {
     const current = activeLobbies[i.channel.id];
     if (!current || current.status !== "waiting") return;
 
     i.channel.messages.fetch(lobby.messageId).then(msg => {
       msg.edit({
-        content: "<:icons8wrong100:1407439999611310130> انتهى الوقت ولم يتم بدء اللعبة.",
+        content: "<:icons8wrong1001:1415979909825695914> انتهى الوقت ولم يتم بدء اللعبة.",
         embeds: [],
         components: []
       }).catch(() => {});
@@ -2900,22 +2900,22 @@ async function handleLobbyJoin(i) {
   if (i.customId !== "lobby_join") return;
   const lobby = activeLobbies[i.channel.id];
   if (!lobby || lobby.status !== "waiting") {
-    return i.reply({ content: "<:icons8wrong100:1407439999611310130> هذا اللوبي غير متاح حالياً.", ephemeral: true });
+    return i.reply({ content: "<:icons8wrong1001:1415979909825695914> هذا اللوبي غير متاح حالياً.", ephemeral: true });
   }
   const gameInfo = multiGamesMap[lobby.gameId];
-  if (!gameInfo) return i.reply({ content: "<:icons8wrong100:1407439999611310130> اللعبة غير موجودة.", ephemeral: true });
+  if (!gameInfo) return i.reply({ content: "<:icons8wrong1001:1415979909825695914> اللعبة غير موجودة.", ephemeral: true });
 
   const userId = i.user.id;
   if (lobby.players[userId]) {
-    return i.reply({ content: "<:icons8wrong100:1407439999611310130> أنت بالفعل في هذا اللوبي.", ephemeral: true });
+    return i.reply({ content: "<:icons8wrong1001:1415979909825695914> انت بالفعل في هذا اللوبي.", ephemeral: true });
   }
 
   const balance = await getBalance(userId);
   if (balance <= 0) {
-    return i.reply({ content: "<:icons8wrong100:1407439999611310130> لا يمكنك الانضمام، رصيدك صفر.", ephemeral: true });
+    return i.reply({ content: "<:icons8wrong1001:1415979909825695914> لا يمكنك الانضمام، رصيدك صفر.", ephemeral: true });
   }
 
-  // لو الرصيد أقل من 1000 → مودال لتحديد الرهان
+  // لو الرصيد اقل من 1000 → مودال لتحديد الرهان
   if (balance < 1000) {
     const modal = new ModalBuilder()
       .setCustomId(`force_bet_modal_${i.user.id}_${encodeId(lobby.gameId)}`)
@@ -2951,12 +2951,12 @@ async function handleLobbyBet(i) {
   if (i.customId !== "lobby_bet") return;
   const lobby = activeLobbies[i.channel.id];
   if (!lobby || lobby.status !== "waiting") {
-    return i.reply({ content: "<:icons8wrong100:1407439999611310130> هذا اللوبي غير متاح حالياً.", ephemeral: true });
+    return i.reply({ content: "<:icons8wrong1001:1415979909825695914> هذا اللوبي غير متاح حالياً.", ephemeral: true });
   }
 
   const userId = i.user.id;
   const player = lobby.players[userId];
-  if (!player) return i.reply({ content: "<:icons8wrong100:1407439999611310130> يجب أن تنضم أولاً قبل تغيير الرهان.", ephemeral: true });
+  if (!player) return i.reply({ content: "<:icons8wrong1001:1415979909825695914> يجب ان تنضم اولاً قبل تغيير الرهان.", ephemeral: true });
 
   const currentBet = player.bet || 1000;
   const balance = await getBalance(userId);
@@ -2970,7 +2970,7 @@ async function handleLobbyBet(i) {
       new ActionRowBuilder().addComponents(
         new TextInputBuilder()
           .setCustomId("forced_bet_input")
-          .setLabel("أدخل مبلغ الرهان الجديد:")
+          .setLabel("ادخل مبلغ الرهان الجديد:")
           .setPlaceholder(` رهانك الحالي هو:  ${currentBet} ريال`)
           .setStyle(TextInputStyle.Short)
           .setRequired(true)
@@ -2985,12 +2985,12 @@ async function handleLobbyLeave(i) {
   if (i.customId !== "lobby_leave") return;
   const lobby = activeLobbies[i.channel.id];
   if (!lobby || lobby.status !== "waiting") {
-    return i.reply({ content: "<:icons8wrong100:1407439999611310130> هذا اللوبي غير متاح حالياً.", ephemeral: true });
+    return i.reply({ content: "<:icons8wrong1001:1415979909825695914> هذا اللوبي غير متاح حالياً.", ephemeral: true });
   }
 
   const userId = i.user.id;
   const player = lobby.players[userId];
-  if (!player) return i.reply({ content: "<:icons8wrong100:1407439999611310130> أنت لست ضمن هذا اللوبي.", ephemeral: true });
+  if (!player) return i.reply({ content: "<:icons8wrong1001:1415979909825695914> انت لست ضمن هذا اللوبي.", ephemeral: true });
 
   delete lobby.players[userId];
   await addBalance(userId, player.bet).catch(() => {});
@@ -3023,31 +3023,31 @@ async function handleLobbyStart(i) {
 
   const lobby = activeLobbies[i.channel.id];
   if (!lobby || lobby.status !== "waiting") {
-    return i.reply({ content: "<:icons8wrong100:1407439999611310130> هذا اللوبي غير متاح حالياً.", ephemeral: true });
+    return i.reply({ content: "<:icons8wrong1001:1415979909825695914> هذا اللوبي غير متاح حالياً.", ephemeral: true });
   }
 
   const userId = i.user.id;
   const player = lobby.players[userId];
   if (!player) {
-    return i.reply({ content: "<:icons8wrong100:1407439999611310130> يجب أن تكون ضمن اللوبي لتبدأ اللعبة.", ephemeral: true });
+    return i.reply({ content: "<:icons8wrong1001:1415979909825695914> يجب ان تكون ضمن اللوبي لتبدا اللعبة.", ephemeral: true });
   }
 
   const gameInfo = multiGamesMap[lobby.gameId];
   if (!gameInfo) {
-    return i.reply({ content: "<:icons8wrong100:1407439999611310130> هذه اللعبة غير مدعومة حالياً.", ephemeral: true });
+    return i.reply({ content: "<:icons8wrong1001:1415979909825695914> هذه اللعبة غير مدعومة حالياً.", ephemeral: true });
   }
 
-  // 1) إذا العدد أكبر من الحد الأقصى: اقصِ آخر المنضمّين حتى يصل العدد للحد
+  // 1) اذا العدد اكبر من الحد الاقصى: اقصِ آخر المنضمّين حتى يصل العدد للحد
   const entries = Object.entries(lobby.players)
-    .sort((a, b) => (a[1].joinedAt || 0) - (b[1].joinedAt || 0)); // الأقدم أولاً
+    .sort((a, b) => (a[1].joinedAt || 0) - (b[1].joinedAt || 0)); // الاقدم اولاً
   const maxPlayers = gameInfo.maxPlayers;
   if (entries.length > maxPlayers) {
-    const overflow = entries.slice(maxPlayers); // هؤلاء سيتم طردهم (الأحدث انضماماً)
+    const overflow = entries.slice(maxPlayers); // هؤلاء سيتم طردهم (الاحدث انضماماً)
     for (const [uid, p] of overflow) {
       delete lobby.players[uid];
       // استرجاع المبلغ
       await addBalance(uid, p.bet).catch(() => {});
-      // محاولة إبلاغ اللاعب بالخاص
+      // محاولة ابلاغ اللاعب بالخاص
       try {
       } catch {}
     }
@@ -3055,12 +3055,12 @@ async function handleLobbyStart(i) {
     await updateLobbyMessage(i, lobby, gameInfo);
   }
 
-  // 2) تحقق الحد الأدنى بعد التقليم
+  // 2) تحقق الحد الادنى بعد التقليم
   const joinedPlayers = Object.entries(lobby.players);
   const readyPlayers = joinedPlayers.filter(([id, p]) => p.ready);
   if (readyPlayers.length < gameInfo.minPlayers) {
     return i.reply({
-      content: `<:icons8wrong100:1407439999611310130> تحتاج إلى ${gameInfo.minPlayers} لاعبين جاهزين على الأقل لبدء اللعبة.`,
+      content: `<:icons8wrong1001:1415979909825695914> تحتاج الى ${gameInfo.minPlayers} لاعبين جاهزين على الاقل لبدء اللعبة.`,
       ephemeral: true
     });
   }
@@ -3076,7 +3076,7 @@ async function handleLobbyStart(i) {
   // بدء اللعبة كما هو
   await gameInfo.start(i.channel.id);
 
-  // حذف رد مؤقت إن وُجد
+  // حذف رد مؤقت ان وُجد
   setTimeout(() => {
     i.deleteReply && i.deleteReply().catch(() => {});
   }, 5000);
@@ -3091,16 +3091,16 @@ async function handleForceBetModal(i, params) {
 
   const lobby = activeLobbies[i.channel.id];
   if (!lobby || lobby.status !== "waiting") {
-    return i.reply({ content: "<:icons8wrong100:1407439999611310130> هذا اللوبي غير متاح حالياً.", ephemeral: true });
+    return i.reply({ content: "<:icons8wrong1001:1415979909825695914> هذا اللوبي غير متاح حالياً.", ephemeral: true });
   }
 
-  // إقرار سريع لتفادي فشل الانتراكشن
+  // اقرار سريع لتفادي فشل الانتراكشن
   await i.deferReply({ ephemeral: true }).catch(() => {});
 
   const input = i.fields.getTextInputValue("forced_bet_input");
   const betAmount = parseInt(input);
   if (isNaN(betAmount) || betAmount <= 0) {
-    return i.editReply({ content: "<:icons8wrong100:1407439999611310130> يرجى إدخال مبلغ رهان صالح." }).catch(() => {});
+    return i.editReply({ content: "<:icons8wrong1001:1415979909825695914> يرجى ادخال مبلغ رهان صالح." }).catch(() => {});
   }
 
   const balance = await getBalance(i.user.id);
@@ -3108,7 +3108,7 @@ async function handleForceBetModal(i, params) {
   const maxAllowed = balance + currentBet;
 
   if (betAmount > maxAllowed) {
-    return i.editReply({ content: `<:icons8wrong100:1407439999611310130> لا تملك رصيداً كافياً. أقصى مبلغ يمكنك الرهان به هو ${maxAllowed}` }).catch(() => {});
+    return i.editReply({ content: `<:icons8wrong1001:1415979909825695914> لا تملك رصيداً كافياً. اقصى مبلغ يمكنك الرهان به هو ${maxAllowed}` }).catch(() => {});
   }
 
   if (!lobby.players[i.user.id]) {
@@ -3130,7 +3130,7 @@ async function handleForceBetModal(i, params) {
   const gameInfo = multiGamesMap[lobby.gameId];
   if (gameInfo) await updateLobbyMessage(i, lobby, gameInfo);
 
-  return i.editReply({ content: "<:icons8correct1001:1407440011183259699> تم تحديث مبلغ الرهان وحالتك أصبحت جاهز." }).catch(() => {});
+  return i.editReply({ content: "<:icons8correct1002:1415979896433278986> تم تحديث مبلغ الرهان وحالتك اصبحت جاهز." }).catch(() => {});
 }
 
 /* مودال تغيير الرهان (للاعب المنضم) */
@@ -3142,16 +3142,16 @@ async function handleBetModal(i, params) {
 
   const lobby = activeLobbies[i.channel.id];
   if (!lobby || lobby.status !== "waiting") {
-    return i.reply({ content: "<:icons8wrong100:1407439999611310130> هذا اللوبي غير متاح حالياً.", ephemeral: true });
+    return i.reply({ content: "<:icons8wrong1001:1415979909825695914> هذا اللوبي غير متاح حالياً.", ephemeral: true });
   }
 
-  // إقرار سريع
+  // اقرار سريع
   await i.deferReply({ ephemeral: true }).catch(() => {});
 
   const input = i.fields.getTextInputValue("forced_bet_input");
   const betAmount = parseInt(input);
   if (isNaN(betAmount) || betAmount <= 0) {
-    return i.editReply({ content: "<:icons8wrong100:1407439999611310130> يرجى إدخال مبلغ رهان صالح." }).catch(() => {});
+    return i.editReply({ content: "<:icons8wrong1001:1415979909825695914> يرجى ادخال مبلغ رهان صالح." }).catch(() => {});
   }
 
   const balance = await getBalance(i.user.id);
@@ -3159,7 +3159,7 @@ async function handleBetModal(i, params) {
   const maxAllowed = balance + currentBet;
 
   if (betAmount > maxAllowed) {
-    return i.editReply({ content: `<:icons8wrong100:1407439999611310130> لا تملك رصيداً كافياً. أقصى مبلغ يمكنك الرهان به هو ${maxAllowed}` }).catch(() => {});
+    return i.editReply({ content: `<:icons8wrong1001:1415979909825695914> لا تملك رصيداً كافياً. اقصى مبلغ يمكنك الرهان به هو ${maxAllowed}` }).catch(() => {});
   }
 
   if (!lobby.players[i.user.id]) {
@@ -3181,11 +3181,11 @@ async function handleBetModal(i, params) {
   const gameInfo = multiGamesMap[lobby.gameId];
   if (gameInfo) await updateLobbyMessage(i, lobby, gameInfo);
 
-  return i.editReply({ content: "<:icons8correct1001:1407440011183259699> تم تحديث مبلغ الرهان وحالتك أصبحت جاهز." }).catch(() => {});
+  return i.editReply({ content: "<:icons8correct1002:1415979896433278986> تم تحديث مبلغ الرهان وحالتك اصبحت جاهز." }).catch(() => {});
 }
 
 /******************************************
-* خريطة الألعاب الجماعية (محدثة)
+* خريطة الالعاب الجماعية (محدثة)
 ******************************************/
 const multiGamesMap = {
   multi_blackjack: {
@@ -3203,14 +3203,14 @@ const multiGamesMap = {
   },
   multi_kicker: {
     start: startRouletteGame,
-    name: "روليت الإقصاء",
+    name: "روليت الاقصاء",
     minPlayers: 2,
     maxPlayers: 99
   },
   multi_colorwar: {
     start: startColorWar,
     handleInteraction: handleColorWarButton,
-    name: "لعبة الألوان",
+    name: "لعبة الالوان",
     minPlayers: 2,
     maxPlayers: 3
   },
@@ -3229,7 +3229,7 @@ const multiGamesMap = {
 };
 
 /******************************************
- * 📊 إحصائيات الألعاب الجماعية (جديدة) *
+ * 📊 احصائيات الالعاب الجماعية (جديدة) *
  ******************************************/
 
 async function updateMultiplayerStats(userId, gameId, didWin, earned, lost) {
@@ -3275,24 +3275,24 @@ async function showMultiplayerStats(user, interaction) {
   const winRate = totalGames > 0 ? ((totalWins / totalGames) * 100).toFixed(1) : "0";
 
   const embed = new EmbedBuilder()
-    .setTitle(`📊 إحصائيات الألعاب الجماعية لـ ${user.username}`)
+    .setTitle(`📊 احصائيات الالعاب الجماعية لـ ${user.username}`)
     .addFields(
       { name: "عدد مرات الفوز", value: `${totalWins}`, inline: true },
       { name: "عدد مرات الخسارة", value: `${totalLosses}`, inline: true },
       { name: "مجموع الجولات", value: `${totalGames}`, inline: true },
       { name: "نسبة الفوز", value: `${winRate}%`, inline: true },
-      { name: "إجمالي الأرباح", value: `${totalEarned} 💰`, inline: true },
-      { name: "إجمالي الخسائر", value: `${totalLost} 💸`, inline: true },
+      { name: "اجمالي الارباح", value: `${totalEarned} 💰`, inline: true },
+      { name: "اجمالي الخسائر", value: `${totalLost} 💸`, inline: true },
       { name: "الصافي", value: `${net >= 0 ? `+${net}` : net} 🧾`, inline: false }
     )
     .setColor(net >= 0 ? 0x2ecc71 : 0xe74c3c)
-    .setFooter({ text: "إحصائيات جميع الألعاب الجماعية حتى الآن" });
+    .setFooter({ text: "احصائيات جميع الالعاب الجماعية حتى الآن" });
 
   await interaction.reply({ embeds: [embed], ephemeral: true });
 }
 
 /******************************************
- * 🃏 Blackjack جماعي (بالصور) - نسخة مفصولة عن الأوفلاين
+ * 🃏 Blackjack جماعي (بالصور) - نسخة مفصولة عن الاوفلاين
  * (متوافق مع الراوتر، دون تغيير المخرجات)
  ******************************************/
 
@@ -3312,7 +3312,7 @@ function drawCardMulti(ctx, card, x, y, w, h) {
   const file = cardToFileMulti(card);
   const img = assets[file];
   if (!img) {
-    console.error("<:icons8wrong100:1407439999611310130> صورة الكرت مفقودة:", file);
+    console.error("<:icons8wrong1001:1415979909825695914> صورة الكرت مفقودة:", file);
     if (assets["cardback.png"]) ctx.drawImage(assets["cardback.png"], x, y, w, h);
     return;
   }
@@ -3357,9 +3357,9 @@ async function renderBlackjackMulti(game) {
 
   ctx.drawImage(bg, 0, 0);
 
-  // مواقع لاعبين (كما هو في الكود الأصلي)
+  // مواقع لاعبين (كما هو في الكود الاصلي)
   const playerPositions = [
-    { x: 175, y: 100 }, // اللاعب الأول
+    { x: 175, y: 100 }, // اللاعب الاول
     { x: 175, y: 625 }  // اللاعب الثاني
   ];
 
@@ -3482,19 +3482,19 @@ async function playNextTurnMulti(channelId) {
 }
 
 /******************************************
- * التعامل مع الضغط على الأزرار (عبر الراوتر)
+ * التعامل مع الضغط على الازرار (عبر الراوتر)
  ******************************************/
 async function handleMultiplayerBlackjackInteraction(i) {
   const game = activeGames[i.channel.id];
   if (!game) return;
 
   const player = game.players[i.user.id];
-  if (!player) return i.reply({ content: "<:icons8wrong100:1407439999611310130> أنت لست مشاركاً في هذه اللعبة.", ephemeral: true }).catch(() => {});
-  if (player.done) return i.reply({ content: "<:icons8wrong100:1407439999611310130> لقد أنهيت دورك بالفعل.", ephemeral: true }).catch(() => {});
+  if (!player) return i.reply({ content: "<:icons8wrong1001:1415979909825695914> انت لست مشاركاً في هذه اللعبة.", ephemeral: true }).catch(() => {});
+  if (player.done) return i.reply({ content: "<:icons8wrong1001:1415979909825695914> لقد انهيت دورك بالفعل.", ephemeral: true }).catch(() => {});
 
   const currentTurn = Object.values(game.players).find(p => !p.done);
   if (!currentTurn || currentTurn.userId !== i.user.id) {
-    return i.reply({ content: "<:icons8wrong100:1407439999611310130> ليس دورك حالياً!", ephemeral: true }).catch(() => {});
+    return i.reply({ content: "<:icons8wrong1001:1415979909825695914> ليس دورك حالياً!", ephemeral: true }).catch(() => {});
   }
 
   await i.deferUpdate().catch(() => {});
@@ -3506,7 +3506,7 @@ async function handleMultiplayerBlackjackInteraction(i) {
     const total = calcHandMulti(player.hand);
 
     if (total > 21) {
-      // أولاً: نُحدّث صورة اللعبة لتظهر البطاقة الأخيرة
+      // اولاً: نُحدّث صورة اللعبة لتظهر البطاقة الاخيرة
       try {
         const buffer = await renderBlackjackMulti(game);
         const attachment = new AttachmentBuilder(buffer, { name: "blackjack_multi.png" });
@@ -3517,7 +3517,7 @@ async function handleMultiplayerBlackjackInteraction(i) {
             await msg.edit({
               content: `🎴 دور <@${player.userId}> (المجموع: ${total})`,
               files: [attachment],
-              components: [] // لا حاجة للأزرار الآن
+              components: [] // لا حاجة للازرار الآن
             }).catch(() => {});
           }
         } else {
@@ -3530,7 +3530,7 @@ async function handleMultiplayerBlackjackInteraction(i) {
         }
       } catch {}
 
-      // ثانياً: ننهي اللعبة بعد إظهار البطاقة
+      // ثانياً: ننهي اللعبة بعد اظهار البطاقة
       player.done = true;
       return finishGameMulti(i.channel.id);
     }
@@ -3546,7 +3546,7 @@ async function handleMultiplayerBlackjackInteraction(i) {
 }
 
 /******************************************
- * إنهاء اللعبة (نفس النصوص/المخرجات) + حذف الرسائل بعد 20s
+ * انهاء اللعبة (نفس النصوص/المخرجات) + حذف الرسائل بعد 20s
  ******************************************/
 async function finishGameMulti(channelId) {
   const game = activeGames[channelId];
@@ -3571,22 +3571,22 @@ async function finishGameMulti(channelId) {
     let reward = 0;
 
     if (total > 21) {
-      status = "<:icons8wrong100:1407439999611310130> خسر (تجاوز 21)";
+      status = "<:icons8wrong1001:1415979909825695914> خسر (تجاوز 21)";
       logMsg = "🃏 Blackjack جماعي - خسارة";
-      // لا نخصم من الرصيد مرة أخرى (تم الخصم عند الانضمام)، فقط نسجل كشف حساب
+      // لا نخصم من الرصيد مرة اخرى (تم الخصم عند الانضمام)، فقط نسجل كشف حساب
       await db.collection("transactions").insertOne({
         userId: playerId, amount: -player.bet, reason: logMsg, timestamp: new Date()
       }).catch(() => {});
     } else if (total === bestScore) {
-      status = total === 21 ? "🏆 بلاك جاك!" : `<:icons8correct1001:1407440011183259699> ${total}`;
+      status = total === 21 ? "🏆 بلاك جاك!" : `<:icons8correct1002:1415979896433278986> ${total}`;
       reward = Math.max(player.bet * 2, totalPot);
       logMsg = "🃏 Blackjack جماعي - فوز";
-      // إيداع دفعة واحدة (payout) فقط وفق النظام الموحّد
+      // ايداع دفعة واحدة (payout) فقط وفق النظام الموحّد
       await updateBalanceWithLog(db, playerId, reward, logMsg).catch(() => {});
       await addBalance(playerId, player.bet).catch(() => {});
       winners.push(playerId);
     } else {
-      status = `<:icons8wrong100:1407439999611310130> ${total}`;
+      status = `<:icons8wrong1001:1415979909825695914> ${total}`;
       logMsg = "🃏 Blackjack جماعي - خسارة";
       await db.collection("transactions").insertOne({
         userId: playerId, amount: -player.bet, reason: logMsg, timestamp: new Date()
@@ -3661,7 +3661,7 @@ async function finishGameMulti(channelId) {
     if (resultMsg) setTimeout(() => resultMsg.delete().catch(() => {}), 20000);
 
   } else {
-    const resultMsg = await channel.send("<:icons8wrong100:1407439999611310130> ما فيه فائز بالجولة!").catch(() => {});
+    const resultMsg = await channel.send("<:icons8wrong1001:1415979909825695914> ما فيه فائز بالجولة!").catch(() => {});
     if (resultMsg) setTimeout(() => resultMsg.delete().catch(() => {}), 40000);
   }
 
@@ -3670,7 +3670,7 @@ async function finishGameMulti(channelId) {
 
 
 /******************************************
- * 🎯 لعبة الألوان (Color War) - متعددة (متوافقة مع الراوتر)
+ * 🎯 لعبة الالوان (Color War) - متعددة (متوافقة مع الراوتر)
  ******************************************/
 
 // تخزين حالة كل جولة حسب channelId
@@ -3728,7 +3728,7 @@ async function startColorWar(channelId) {
 /******************************************
  * توليد الشبكة وتبديل العناصر
  ******************************************/
-// توزيع متساوٍ + منح الخانات الزائدة عشوائياً للّون/الألوان
+// توزيع متساوٍ + منح الخانات الزائدة عشوائياً للّون/الالوان
 function generateColorGrid(colors) {
   const grid = [];
   const base = Math.floor(25 / colors.length);
@@ -3819,13 +3819,13 @@ async function handleColorTimeout(channelId) {
 
   if (game.players.length === 2) {
     const winner = game.players.find(p => p.id !== loser.id);
-    const msg = await channel.send(`⏱️ <@${loser.id}> تأخر وتم استبعاده.\n🏆 الفائز: <@${winner.id}>`).catch(() => null);
+    const msg = await channel.send(`⏱️ <@${loser.id}> تاخر وتم استبعاده.\n🏆 الفائز: <@${winner.id}>`).catch(() => null);
 
     // حذف رسالة الفوز ورسالة اللعبة بعد 20 ثانية
     if (msg) setTimeout(() => msg.delete().catch(() => {}), 25000);
     if (game.message) setTimeout(() => game.message.delete().catch(() => {}), 25000);
 
-    // إنهاء صامت: تسوية مالية وتنظيف
+    // انهاء صامت: تسوية مالية وتنظيف
     endColorGame(channelId, winner.id);
   } else {
     game.players.splice(game.currentIndex, 1);
@@ -3834,7 +3834,7 @@ async function handleColorTimeout(channelId) {
     if (game.currentIndex >= game.players.length) game.currentIndex = 0;
 
     // رسالة معلومات يمكن حذفها بعد 20 ثانية (اختياري)
-    const info = await channel.send(`⏱️ <@${loser.id}> تم استبعاده بسبب التأخير. اللعبة مستمرة.`).catch(() => null);
+    const info = await channel.send(`⏱️ <@${loser.id}> تم استبعاده بسبب التاخير. اللعبة مستمرة.`).catch(() => null);
     if (info) setTimeout(() => info.delete().catch(() => {}), 25000);
 
     updateColorGameMessage(channelId);
@@ -3843,7 +3843,7 @@ async function handleColorTimeout(channelId) {
 }
 
 /******************************************
- * معالج الأزرار (عبر الراوتر)
+ * معالج الازرار (عبر الراوتر)
  ******************************************/
 async function handleColorWarButton(i) {
   const game = colorWarGames[i.channel.id];
@@ -3854,15 +3854,15 @@ async function handleColorWarButton(i) {
 
   const idx = parseInt(custom.slice("color_".length), 10);
   if (Number.isNaN(idx) || idx < 0 || idx > 24) {
-    return i.reply({ content: "<:icons8wrong100:1407439999611310130> خيار غير صالح.", ephemeral: true }).catch(() => {});
+    return i.reply({ content: "<:icons8wrong1001:1415979909825695914> خيار غير صالح.", ephemeral: true }).catch(() => {});
   }
 
   const currentPlayer = game.players[game.currentIndex];
   if (i.user.id !== currentPlayer.id) {
-    return i.reply({ content: "<:icons8wrong100:1407439999611310130> ليس دورك.", ephemeral: true }).catch(() => {});
+    return i.reply({ content: "<:icons8wrong1001:1415979909825695914> ليس دورك.", ephemeral: true }).catch(() => {});
   }
   if (game.revealed[idx]) {
-    return i.reply({ content: "<:icons8wrong100:1407439999611310130> هذه الخانة تم كشفها.", ephemeral: true }).catch(() => {});
+    return i.reply({ content: "<:icons8wrong1001:1415979909825695914> هذه الخانة تم كشفها.", ephemeral: true }).catch(() => {});
   }
 
   await i.deferUpdate().catch(() => {});
@@ -3886,7 +3886,7 @@ async function handleColorWarButton(i) {
 }
 
 /******************************************
- * إنهاء اللعبة بحساب النقاط المكشوفة
+ * انهاء اللعبة بحساب النقاط المكشوفة
  ******************************************/
 async function finishColorGame(channelId) {
   const game = colorWarGames[channelId];
@@ -3964,7 +3964,7 @@ async function finishColorGame(channelId) {
 }
 
 /******************************************
- * إنهاء صامت عند الاستبعاد بالوقت (لا رسائل إضافية)
+ * انهاء صامت عند الاستبعاد بالوقت (لا رسائل اضافية)
  ******************************************/
 async function endColorGame(channelId, winnerId) {
   const game = colorWarGames[channelId];
@@ -4026,7 +4026,7 @@ async function startTimeRoom(channelId) {
 
   timeRoomGames[channelId] = game;
 
-  // صف أزرار الانسحاب (زر لكل لاعب)
+  // صف ازرار الانسحاب (زر لكل لاعب)
   const row = new ActionRowBuilder();
   for (const p of players) {
     row.addComponents(
@@ -4041,7 +4041,7 @@ async function startTimeRoom(channelId) {
   const channel = await client.channels.fetch(channelId);
   const img = await renderTimeRoom(game);
   const msg = await channel.send({
-    content: `💣 **غرفة الزمن بدأت!** قاوم أطول وقت ممكن بدون ما تنفجر.\n⏱️ الوقت: 0 ثانية`,
+    content: `💣 **غرفة الزمن بدات!** قاوم اطول وقت ممكن بدون ما تنفجر.\n⏱️ الوقت: 0 ثانية`,
     files: [img],
     components: [row]
   });
@@ -4199,26 +4199,26 @@ async function handleTimeRoomWithdraw(i) {
 
   const userId = i.customId.replace("withdraw_", "");
   if (i.user.id !== userId) {
-    return i.reply({ content: "<:icons8wrong100:1407439999611310130> هذا الزر ليس لك!", ephemeral: true }).catch(() => {});
+    return i.reply({ content: "<:icons8wrong1001:1415979909825695914> هذا الزر ليس لك!", ephemeral: true }).catch(() => {});
   }
 
   const player = game.players.find(p => p.id === userId);
   if (!player || (game.withdrawn[userId] && game.withdrawn[userId].status === "left")) {
-    return i.reply({ content: "<:icons8wrong100:1407439999611310130> انسحبت بالفعل.", ephemeral: true }).catch(() => {});
+    return i.reply({ content: "<:icons8wrong1001:1415979909825695914> انسحبت بالفعل.", ephemeral: true }).catch(() => {});
   }
 
   const checkpoint = game.withdrawn[userId]?.multiplier || game.lastCheckpoint || 1;
   const payout = Math.floor(player.bet * checkpoint); // الدفعة النهائية
 
-  // إيداع دفعة واحدة فقط (بدون addBalance على أصل الرهان)
+  // ايداع دفعة واحدة فقط (بدون addBalance على اصل الرهان)
   await updateBalanceWithLog(db, userId, payout, `💣 Time Room - انسحاب ناجح`);
-  await addBalance(userId, player.bet); // استرداد الرهان الأصلي
+  await addBalance(userId, player.bet); // استرداد الرهان الاصلي
   await updateMultiplayerStats(userId, "multi_time", true, payout, 0);
 
   // تعليم اللاعب كمنسحب
   game.withdrawn[userId] = { status: "left", multiplier: checkpoint, earned: payout };
 
-  // إعادة بناء الأزرار للاعبين المتبقين فقط
+  // اعادة بناء الازرار للاعبين المتبقين فقط
   const row = new ActionRowBuilder();
   for (const p of game.players) {
     const stillIn = !game.withdrawn[p.id] || game.withdrawn[p.id].status !== "left";
@@ -4240,11 +4240,11 @@ async function handleTimeRoomWithdraw(i) {
     components: row.components.length > 0 ? [row] : []
   }).catch(() => {});
 
-  // إن انسحب الجميع قبل الانفجار
+  // ان انسحب الجميع قبل الانفجار
   const stillPlaying = game.players.filter(p => !game.withdrawn[p.id] || game.withdrawn[p.id].status !== "left");
   if (stillPlaying.length === 0) {
     const endMsg = await game.message.edit({
-      content: `<:icons8correct1001:1407440011183259699> انسحب جميع اللاعبين قبل الانفجار!\nاللعبة انتهت.`,
+      content: `<:icons8correct1002:1415979896433278986> انسحب جميع اللاعبين قبل الانفجار!\nاللعبة انتهت.`,
       files: [img],
       components: []
     }).catch(() => {});
@@ -4261,7 +4261,7 @@ async function handleTimeRoomWithdraw(i) {
 
 const buckshotMultiplayerGames = {};
 const buckshotMultiItemsList = ["beer", "scope", "saw", "pills", "cuffs"];
-const buckshotOneTimeItems = ["scope", "saw", "cuffs"]; // أدوات تُستخدم مرة واحدة لكل دور
+const buckshotOneTimeItems = ["scope", "saw", "cuffs"]; // ادوات تُستخدم مرة واحدة لكل دور
 const buckshotItemEmojis = {
   scope: "1407792799868522629",
   beer:  "1407792769551958046",
@@ -4272,8 +4272,8 @@ const buckshotItemEmojis = {
 
 // منطق مطابق للسولو
 function consumeNextShotDouble(activeEffects, shooterId, isRealShot) {
-  // يرجع 2 إذا المنشار نشط والطلقة حقيقية، وإلا 1
-  // ويُلغى المنشار دائماً بعد "المحاولة التالية" سواء كانت فارغة أو حقيقية
+  // يرجع 2 اذا المنشار نشط والطلقة حقيقية، والا 1
+  // ويُلغى المنشار دائماً بعد "المحاولة التالية" سواء كانت فارغة او حقيقية
   let mult = 1;
   if (activeEffects.saw === shooterId) {
     mult = isRealShot ? 2 : 1;
@@ -4282,7 +4282,7 @@ function consumeNextShotDouble(activeEffects, shooterId, isRealShot) {
   return mult;
 }
 function skipNextTurnFor(activeEffects, targetId) {
-  // وضع الأصفاد على الخصم → يسقط دوره القادم مرة واحدة
+  // وضع الاصفاد على الخصم → يسقط دوره القادم مرة واحدة
   activeEffects.cuffed = targetId;
 }
 function shouldSkipTurn(activeEffects, targetId) {
@@ -4330,7 +4330,7 @@ async function startMultiplayerBuckshot(channelId) {
     gameMessage: null,
     channelId,
     log: "",
-    usedThisTurn: {}       // الحماية لأدوات once/turn
+    usedThisTurn: {}       // الحماية لادوات once/turn
   };
 
   buckshotMultiplayerGames[channelId] = game;
@@ -4346,17 +4346,17 @@ async function startMultiplayerBuckshot(channelId) {
     const userId  = i.user.id;
 
     if (userId !== current.id) {
-      return i.reply({ content: `<:icons8wrong100:1407439999611310130> ليس دورك!`, ephemeral: true });
+      return i.reply({ content: `<:icons8wrong1001:1415979909825695914> ليس دورك!`, ephemeral: true });
     }
 
-    // استخدام أداة
+    // استخدام اداة
     if (i.customId.startsWith("buckshot_use_")) {
       const item = i.customId.replace("buckshot_use_", "");
       const hasItem = current.items[item] && current.items[item] > 0;
-      if (!hasItem) return i.reply({ content: `<:icons8wrong100:1407439999611310130> لا تملك ${item} لاستخدامه.`, ephemeral: true });
+      if (!hasItem) return i.reply({ content: `<:icons8wrong1001:1415979909825695914> لا تملك ${item} لاستخدامه.`, ephemeral: true });
 
       if (buckshotOneTimeItems.includes(item) && game.usedThisTurn[userId + "_" + item]) {
-        return i.reply({ content: `<:icons8wrong100:1407439999611310130> لا يمكنك استخدام ${item} أكثر من مرة في نفس الدور.`, ephemeral: true });
+        return i.reply({ content: `<:icons8wrong1001:1415979909825695914> لا يمكنك استخدام ${item} اكثر من مرة في نفس الدور.`, ephemeral: true });
       }
       if (buckshotOneTimeItems.includes(item)) {
         game.usedThisTurn[userId + "_" + item] = true;
@@ -4365,11 +4365,11 @@ async function startMultiplayerBuckshot(channelId) {
       current.items[item]--;
       if (item === "scope") {
         const nextShot = game.deck[0];
-        game.log = `استخدمت المنظار واكتشفت أن الطلقة القادمة${nextShot ? " حقيقية" : " فارغة"}`;
+        game.log = `استخدمت المنظار واكتشفت ان الطلقة القادمة${nextShot ? " حقيقية" : " فارغة"}`;
       } else if (item === "beer") {
         const removed = game.deck.shift();
         game.log = ` شربت البيرة وحذفت الطلقة (${removed ? " حقيقية" : " فارغة"})`;
-        // إصلاح: لا نُعيد توليد الدكة هنا إلا إذا فرغت تماماً
+        // اصلاح: لا نُعيد توليد الدكة هنا الا اذا فرغت تماماً
         if (game.deck.length === 0) game.deck = generateBuckshotDeck();
       } else if (item === "pills") {
         if (current.health < 6) {
@@ -4382,40 +4382,40 @@ async function startMultiplayerBuckshot(channelId) {
         game.activeEffects.saw = userId; // المنشار للطلقة التالية فقط
         game.log = `استخدمت المنشار والطلقة القادمة ستكون ضرر مضاعف`;
       } else if (item === "cuffs") {
-        skipNextTurnFor(game.activeEffects, other.id); // إسقاط دور الخصم مرة واحدة
+        skipNextTurnFor(game.activeEffects, other.id); // اسقاط دور الخصم مرة واحدة
         game.log = `استخدمت الاصفاد وقيدت حركة الخصم`;
       }
       await i.deferUpdate();
       return renderMultiplayerBuckshot(channelId);
     }
 
-    // إطلاق النار
+    // اطلاق النار
     const shootSelf = i.customId === "buckshot_self";
     const target    = shootSelf ? current : other;
 
-    // إصلاح: لا نُعيد توليد الدكة بسبب نفاد الطلقات الحقيقية فقط؛
-    // نُعيد التوليد فقط إذا كانت الدكة فارغة قبل السحب.
+    // اصلاح: لا نُعيد توليد الدكة بسبب نفاد الطلقات الحقيقية فقط؛
+    // نُعيد التوليد فقط اذا كانت الدكة فارغة قبل السحب.
     if (game.deck.length === 0) {
       game.deck = generateBuckshotDeck();
     }
 
     const shotIsReal = !!game.deck.shift();
 
-    // ضرر المنشار (مثل السولو): يتضاعف فقط إن كانت الطلقة حقيقية ويُستهلك دائماً
+    // ضرر المنشار (مثل السولو): يتضاعف فقط ان كانت الطلقة حقيقية ويُستهلك دائماً
     const dmgMult = consumeNextShotDouble(game.activeEffects, current.id, shotIsReal);
     const damage  = shotIsReal ? 1 * dmgMult : 0;
 
-    // إصلاح: عند بقاء طلقات فارغة فقط، لن يحدث ضرر (لأننا لا نُعيد توليد الدكة قبل السحب)
+    // اصلاح: عند بقاء طلقات فارغة فقط، لن يحدث ضرر (لاننا لا نُعيد توليد الدكة قبل السحب)
     target.health -= damage;
 
     // السجل (كما هو)
     if (shootSelf) {
       if (shotIsReal) {
         game.log = damage === 2
-          ? ` أطلق الخصم على نفسه وكانت طلقة حقيقية! نقص قلبان `
-          : ` أطلق الخصم على نفسه وكانت طلقة حقيقية! نقص قلب `;
+          ? ` اطلق الخصم على نفسه وكانت طلقة حقيقية! نقص قلبان `
+          : ` اطلق الخصم على نفسه وكانت طلقة حقيقية! نقص قلب `;
       } else {
-        game.log = ` أطلقت على نفسك وكانت طلقة فارغة`;
+        game.log = ` اطلقت على نفسك وكانت طلقة فارغة`;
       }
     } else {
       if (shotIsReal) {
@@ -4425,8 +4425,8 @@ async function startMultiplayerBuckshot(channelId) {
             : `اطلقت على الخصم وكانت طلقة حقيقية! نقص قلب والخصم مقيد `;
         } else {
           game.log = damage === 2
-            ? ` أطلق عليك الخصم وكانت طلقة حقيقية! نقصت قلبان `
-            : ` أطلق عليك الخصم وكانت طلقة حقيقية! نقصت قلب `;
+            ? ` اطلق عليك الخصم وكانت طلقة حقيقية! نقصت قلبان `
+            : ` اطلق عليك الخصم وكانت طلقة حقيقية! نقصت قلب `;
         }
       } else {
         if (shouldSkipTurn(game.activeEffects, other.id)) {
@@ -4437,12 +4437,12 @@ async function startMultiplayerBuckshot(channelId) {
       }
     }
 
-    // إعادة توليد الدكة فقط عندما تنفد تماماً بعد السحب
+    // اعادة توليد الدكة فقط عندما تنفد تماماً بعد السحب
     if (game.deck.length === 0) {
       game.deck = generateBuckshotDeck();
     }
 
-    // مكافأة القلوب المنخفضة (مرّة واحدة لكل لاعب)
+    // مكافاة القلوب المنخفضة (مرّة واحدة لكل لاعب)
     for (const p of game.players) {
       if (!p.gotItemOnLowHealth && p.health <= 3) {
         p.gotItemOnLowHealth = true;
@@ -4452,18 +4452,18 @@ async function startMultiplayerBuckshot(channelId) {
       }
     }
 
-    // حسم الفوز (إصلاح الانتحار = خسارة)
+    // حسم الفوز (اصلاح الانتحار = خسارة)
     if (target.health <= 0) {
       const winner = shootSelf ? other : current;
       const loser  = shootSelf ? current : other;
 
-      // الجائزة: الأكبر بين (رهان الفائز ×2) و(مجموع الرهانات)
+      // الجائزة: الاكبر بين (رهان الفائز ×2) و(مجموع الرهانات)
       const totalPot = winner.bet + loser.bet;
       const payout   = Math.max(winner.bet * 2, totalPot);
 
-      // مطابق للنظام الموحّد: إيداع دفعة واحدة فقط دون addBalance
+      // مطابق للنظام الموحّد: ايداع دفعة واحدة فقط دون addBalance
       await updateBalanceWithLog(db, winner.id, payout, "🔫 Buckshot Multiplayer - فوز");
-      await addBalance(winner.id, winner.bet); // استرداد رهان الفائز الأصلي
+      await addBalance(winner.id, winner.bet); // استرداد رهان الفائز الاصلي
       await db.collection("transactions").insertOne({
         userId: loser.id,
         amount: -loser.bet,
@@ -4487,17 +4487,17 @@ async function startMultiplayerBuckshot(channelId) {
       return;
     }
 
-    // منطق الأصفاد: إذا كان الخصم مقيداً → لا نقلب الدور هذه المرة
+    // منطق الاصفاد: اذا كان الخصم مقيداً → لا نقلب الدور هذه المرة
     const enemyWasCuffed = shouldSkipTurn(game.activeEffects, other.id);
-    // الأصفاد تُستهلك بعد أول محاولة تالية (سواء الطلقة حقيقية أو فارغة)
+    // الاصفاد تُستهلك بعد اول محاولة تالية (سواء الطلقة حقيقية او فارغة)
     clearCuffs(game.activeEffects);
 
-    // أدوات once/turn تُصفّر مع بداية الدور الجديد
+    // ادوات once/turn تُصفّر مع بداية الدور الجديد
     game.usedThisTurn = {};
 
     // تبديل الدور:
-    // - إذا أطلق على نفسه وكانت فارغة: يبقى الدور له
-    // - إذا الخصم كان مقيداً: يبقى الدور للمُطلق (يسقط دور الخصم)
+    // - اذا اطلق على نفسه وكانت فارغة: يبقى الدور له
+    // - اذا الخصم كان مقيداً: يبقى الدور للمُطلق (يسقط دور الخصم)
     // - غير ذلك: نقلب الدور
     if (!(shootSelf && !shotIsReal) && !enemyWasCuffed) {
       game.currentPlayerIndex = 1 - game.currentPlayerIndex;
@@ -4566,7 +4566,7 @@ async function renderMultiplayerBuckshot(channelId) {
     ctx.drawImage(icon, x, y, 65, 65);
   }
 
-  // الأدوات (يمين)
+  // الادوات (يمين)
   const toolOrder = ["beer", "scope", "saw", "pills", "cuffs"];
   for (let i = 0; i < toolOrder.length; i++) {
     let col = i % 2;
@@ -4583,8 +4583,7 @@ async function renderMultiplayerBuckshot(channelId) {
 
     ctx.fillStyle = "white";
   ctx.font = " 17px Cairo";
-       ctx.textAlign = "center";
-
+      ctx.textAlign = "center";
     ctx.fillText(`x${count}`, x + 45, y + 30);
   }
 
@@ -4608,15 +4607,14 @@ async function renderMultiplayerBuckshot(channelId) {
     const avatarImg = await loadImage(bufferAvatar);
     drawCircularImage(ctx, avatarImg, 565, 300, 150);
   } catch (e) {
-    console.error("<:icons8wrong100:1407439999611310130> فشل تحميل صورة اللاعب الحالي:", e);
+    console.error("<:icons8wrong1001:1415979909825695914> فشل تحميل صورة اللاعب الحالي:", e);
   }
 
-  // سجل الأحداث
+  // سجل الاحداث
   if (game.log) {
     ctx.fillStyle = "white";
   ctx.font = "50px Cairo";
-       ctx.textAlign = "center";
-
+      ctx.textAlign = "center";
     ctx.fillText(game.log, 120, 75);
   }
 
@@ -4652,7 +4650,7 @@ async function renderMultiplayerBuckshot(channelId) {
 
 const explosionGames = {}; // channelId -> game
 
-// إعداد جولة حسب رقمها (كما هو)
+// اعداد جولة حسب رقمها (كما هو)
 function getRoundSettings(round) {
   if (round === 1) return { duration: 20000, explodeAfter: 5000 };
   if (round === 2) return { duration: 15000, explodeAfter: 4000 };
@@ -4681,7 +4679,7 @@ async function startExplosionGame(channelId) {
     gameMessage: null,
     channelId,
     timeout: null,           // مؤقّت نهاية الجولة
-    holdTimeout: null        // مؤقّت انفجار بسبب طول الإمساك
+    holdTimeout: null        // مؤقّت انفجار بسبب طول الامساك
   };
 
   explosionGames[channelId] = game;
@@ -4696,14 +4694,14 @@ async function startExplosionRound(channelId) {
   const { duration, explodeAfter } = getRoundSettings(game.round);
   game.roundStartTime = Date.now();
 
-  // اللاعبين الأحياء
+  // اللاعبين الاحياء
   const alivePlayers = game.players.filter(p => !game.eliminated.includes(p.id));
   if (alivePlayers.length === 1) {
-    // إعلان الفائز وتسوية الرهان
+    // اعلان الفائز وتسوية الرهان
     return finishExplosionGame(channelId, alivePlayers[0]);
   }
 
-  // اختيار حامل القنبلة عشوائياً من الأحياء
+  // اختيار حامل القنبلة عشوائياً من الاحياء
   game.currentHolder = alivePlayers[Math.floor(Math.random() * alivePlayers.length)].id;
   game.holdStartTime = Date.now();
 
@@ -4712,7 +4710,7 @@ async function startExplosionRound(channelId) {
 
   // مؤقت نهاية الجولة (انفجار مؤكد عند انتهاء مدّة الجولة)
   game.timeout = setTimeout(() => bombExplodes(channelId), duration);
-  // مؤقت انفجار بسبب طول الإمساك
+  // مؤقت انفجار بسبب طول الامساك
   game.holdTimeout = setTimeout(() => bombExplodes(channelId, true), explodeAfter);
 
   await renderExplosionGame(channelId);
@@ -4722,19 +4720,19 @@ async function startExplosionRound(channelId) {
 async function passBomb(i, targetId) {
   const game = explosionGames[i.channel.id];
   if (!game) {
-    return i.reply({ content: "<:icons8wrong100:1407439999611310130> لا توجد لعبة نشطة هنا.", ephemeral: true }).catch(() => {});
+    return i.reply({ content: "<:icons8wrong1001:1415979909825695914> لا توجد لعبة نشطة هنا.", ephemeral: true }).catch(() => {});
   }
 
   const alive = id => !game.eliminated.includes(id);
   if (game.currentHolder !== i.user.id || targetId === i.user.id || !alive(targetId) || !alive(i.user.id)) {
-    return i.reply({ content: "<:icons8wrong100:1407439999611310130> لا يمكنك تمرير القنبلة بهذا الشكل.", ephemeral: true }).catch(() => {});
+    return i.reply({ content: "<:icons8wrong1001:1415979909825695914> لا يمكنك تمرير القنبلة بهذا الشكل.", ephemeral: true }).catch(() => {});
   }
 
   // تمرير القنبلة
   game.currentHolder = targetId;
   game.holdStartTime = Date.now();
 
-  // أعد ضبط مؤقت الإمساك فقط
+  // اعد ضبط مؤقت الامساك فقط
   const { explodeAfter } = getRoundSettings(game.round);
   if (game.holdTimeout) clearTimeout(game.holdTimeout);
   game.holdTimeout = setTimeout(() => bombExplodes(i.channel.id, true), explodeAfter);
@@ -4743,7 +4741,7 @@ async function passBomb(i, targetId) {
   await renderExplosionGame(i.channel.id);
 }
 
-// انفجار القنبلة (انتهاء الإمساك أو نهاية مدّة الجولة)
+// انفجار القنبلة (انتهاء الامساك او نهاية مدّة الجولة)
 async function bombExplodes(channelId, byHold = false) {
   const game = explosionGames[channelId];
   if (!game) return;
@@ -4764,11 +4762,11 @@ async function bombExplodes(channelId, byHold = false) {
 
   await renderExplosionGame(channelId);
 
-  // ابدأ الجولة التالية بعد 3 ثوانٍ
+  // ابدا الجولة التالية بعد 3 ثوانٍ
   setTimeout(() => startExplosionRound(channelId), 3000);
 }
 
-// تسوية نهاية اللعبة وإعلان الفائز (نفس المخرجات مع منطق مالي موحّد)
+// تسوية نهاية اللعبة واعلان الفائز (نفس المخرجات مع منطق مالي موحّد)
 async function finishExplosionGame(channelId, winner) {
   const game = explosionGames[channelId];
   if (!game) return;
@@ -4785,12 +4783,12 @@ async function finishExplosionGame(channelId, winner) {
   const totalPot = Object.values(lobby.players).reduce((sum, p) => sum + (p.bet || 0), 0);
   const playerBet = lobby.players[winner.id]?.bet || 0;
 
-  // الجائزة = الأكبر بين (رهان الفائز ×2) و(مجموع الرهانات)
+  // الجائزة = الاكبر بين (رهان الفائز ×2) و(مجموع الرهانات)
   const payout = Math.max(playerBet * 2, totalPot);
 
-  // الفائز: إيداع دفعة واحدة فقط (بدون addBalance إضافية)
+  // الفائز: ايداع دفعة واحدة فقط (بدون addBalance اضافية)
   await updateBalanceWithLog(db, winner.id, payout, "💣 Explosion Multiplayer - فوز").catch(() => {});
-  await addBalance(winner.id, playerBet).catch(() => {}); // استرداد الرهان الأصلي
+  await addBalance(winner.id, playerBet).catch(() => {}); // استرداد الرهان الاصلي
   await updateMultiplayerStats(winner.id, "multi_explosion", true, payout, 0).catch(() => {});
 
   // الخاسرون: تسجيل -bet فقط
@@ -4844,7 +4842,7 @@ async function renderExplosionGame(channelId) {
 
   const attachment = new AttachmentBuilder(await canvas.encode("png"), { name: "explosion.png" });
 
-  // أزرار تمرير القنبلة لكل لاعب حيّ غير الحامل
+  // ازرار تمرير القنبلة لكل لاعب حيّ غير الحامل
   const row = new ActionRowBuilder().addComponents(
     game.players
       .filter(p => !game.eliminated.includes(p.id) && p.id !== game.currentHolder)
@@ -4884,7 +4882,7 @@ async function handleBombPass(i) {
 
 
 /******************************************
- * 🎲 روليت الإقصاء الجماعية (مع GIF) — متوافقة مع الراوتر/الهلبِر
+ * 🎲 روليت الاقصاء الجماعية (مع GIF) — متوافقة مع الراوتر/الهلبِر
  ******************************************/
 
 const GIFEncoder = require("gif-encoder-2");
@@ -4913,14 +4911,14 @@ async function startRouletteGame(channelId) {
     gameMessage: null,
     channelId,
     log: [],
-    timeout: null          // مؤقّت الإقصاء عند عدم التفاعل
+    timeout: null          // مؤقّت الاقصاء عند عدم التفاعل
   };
 
   rouletteGames[channelId] = game;
   await nextRouletteTurn(channelId);
 }
 
-/* إنهاء اللعبة وتوزيع الجوائز (منطق مالي موحّد) */
+/* انهاء اللعبة وتوزيع الجوائز (منطق مالي موحّد) */
 async function finishRouletteGame(channelId, winner) {
   const game = rouletteGames[channelId];
   if (!game) return;
@@ -4936,9 +4934,9 @@ async function finishRouletteGame(channelId, winner) {
   const playerBet = lobby.players[winner.id]?.bet || 0;
   const payout = Math.max(playerBet * 2, totalPot);
 
-  // الفائز: إيداع دفعة واحدة فقط (بدون addBalance)
+  // الفائز: ايداع دفعة واحدة فقط (بدون addBalance)
   await updateBalanceWithLog(db, winner.id, payout, "🎲 Roulette - فوز").catch(() => {});
-  await addBalance(winner.id, playerBet).catch(() => {}); // استرداد الرهان الأصلي
+  await addBalance(winner.id, playerBet).catch(() => {}); // استرداد الرهان الاصلي
   await updateMultiplayerStats(winner.id, "roulette", true, payout, 0).catch(() => {});
 
   // الخاسرون: تسجيل -bet فقط
@@ -4962,7 +4960,7 @@ async function finishRouletteGame(channelId, winner) {
   delete rouletteGames[channelId];
 }
 
-/* إعداد الدور التالي */
+/* اعداد الدور التالي */
 async function nextRouletteTurn(channelId) {
   const game = rouletteGames[channelId];
   if (!game) return;
@@ -4982,18 +4980,18 @@ async function nextRouletteTurn(channelId) {
   await renderRouletteGame(channelId);
 
   clearTimeoutSafe(game);
-  // 15 ثانية ليتخذ القرار وإلا يُقصى تلقائياً
+  // 15 ثانية ليتخذ القرار والا يُقصى تلقائياً
   game.timeout = setTimeout(() => eliminateInactive(channelId), 15000);
 }
 
-/* إقصاء غير المتفاعل */
+/* اقصاء غير المتفاعل */
 async function eliminateInactive(channelId) {
   const game = rouletteGames[channelId];
   if (!game) return;
 
   game.eliminated.push(game.currentPlayer);
   const user = game.players.find(p => p.id === game.currentPlayer);
-  game.log.push(`⏰ لم يتخذ ${user.username} قرارًا وتم إقصاؤه تلقائيًا.`);
+  game.log.push(`⏰ لم يتخذ ${user.username} قرارًا وتم اقصاؤه تلقائيًا.`);
   await renderRouletteGame(channelId);
 
   const remaining = game.players.filter(p => !game.eliminated.includes(p.id));
@@ -5004,7 +5002,7 @@ async function eliminateInactive(channelId) {
   }
 }
 
-/* معالجة الأزرار (تحديد الإقصاء/التجاوز/العشوائي) */
+/* معالجة الازرار (تحديد الاقصاء/التجاوز/العشوائي) */
 async function handleRouletteAction(i, targetId) {
   const game = rouletteGames[i.channel.id];
   if (!game || game.currentPlayer !== i.user.id) return;
@@ -5012,7 +5010,7 @@ async function handleRouletteAction(i, targetId) {
   const alive = game.players.filter(p => !game.eliminated.includes(p.id));
 
   if (targetId === "skip") {
-    game.log.push(`🔄 ${i.user.username} قرر تجاوز الجولة دون إقصاء أحد.`);
+    game.log.push(`🔄 ${i.user.username} قرر تجاوز الجولة دون اقصاء احد.`);
   } else if (targetId === "random") {
     const choices = alive.filter(p => p.id !== i.user.id);
     const chosen = choices[Math.floor(Math.random() * choices.length)];
@@ -5022,7 +5020,7 @@ async function handleRouletteAction(i, targetId) {
     }
   } else {
     if (targetId === i.user.id) return; // لا يجوز طرد نفسك
-    if (!alive.some(p => p.id === targetId)) return; // الهدف يجب أن يكون حياً
+    if (!alive.some(p => p.id === targetId)) return; // الهدف يجب ان يكون حياً
     game.eliminated.push(targetId);
     const target = game.players.find(p => p.id === targetId);
     game.log.push(`☠️ ${i.user.username} طرد ${target.username}`);
@@ -5060,7 +5058,7 @@ async function renderRouletteGif(game, duration = 3000) {
     ctx.save();
     ctx.translate(width / 2, height / 2);
 
-    // الأقسام الملونة
+    // الاقسام الملونة
     alivePlayers.forEach((p, idx) => {
       const startAngle = idx * angleStep + angleOffset;
       const endAngle = startAngle + angleStep;
@@ -5073,7 +5071,7 @@ async function renderRouletteGif(game, duration = 3000) {
       ctx.fill();
     });
 
-    // الأسماء
+    // الاسماء
     ctx.rotate(angleOffset);
     ctx.font = "28px PressStart2P";
     ctx.fillStyle = "black";
@@ -5115,7 +5113,7 @@ async function renderRouletteGif(game, duration = 3000) {
   return encoder.out.getData();
 }
 
-/* صورة النتيجة بين الجيف والأزرار */
+/* صورة النتيجة بين الجيف والازرار */
 async function renderRouletteResult(game, winnerId) {
   const width = 1152, height = 768;
   const canvas = createCanvas(width, height);
@@ -5146,7 +5144,7 @@ async function renderRouletteResult(game, winnerId) {
   ctx.fill();
   ctx.globalCompositeOperation = "source-over";
 
-  // الأسماء
+  // الاسماء
   ctx.font = "28px PressStart2P";
   ctx.fillStyle = "black";
   ctx.textAlign = "center";
@@ -5219,7 +5217,7 @@ async function renderWinnerBackground(game, winnerId) {
   return new AttachmentBuilder(await canvas.encode("png"), { name: "winner.png" });
 }
 
-/* عرض اللعبة (GIF -> نتيجة + أزرار) */
+/* عرض اللعبة (GIF -> نتيجة + ازرار) */
 async function renderRouletteGame(channelId) {
   const game = rouletteGames[channelId];
   if (!game) return;
@@ -5227,7 +5225,7 @@ async function renderRouletteGame(channelId) {
   const channel = await client.channels.fetch(channelId);
   const aliveCount = game.players.filter(p => !game.eliminated.includes(p.id)).length;
 
-  // إن بقي لاعب واحد: صورة فائز
+  // ان بقي لاعب واحد: صورة فائز
   if (aliveCount === 1) {
     const winner = game.players.find(p => !game.eliminated.includes(p.id));
     const resultImg = await renderWinnerBackground(game, winner.id);
@@ -5252,7 +5250,7 @@ async function renderRouletteGame(channelId) {
     }).catch(() => {});
   }
 
-  // بعد 3 ثواني: صورة النتيجة + الأزرار
+  // بعد 3 ثواني: صورة النتيجة + الازرار
   setTimeout(async () => {
     const resultImg = await renderRouletteResult(game, game.currentPlayer);
 
@@ -5294,7 +5292,7 @@ function clearTimeoutSafe(game) {
 }
 
 /******************************************
- * ربط الأزرار مع الراوتر العام
+ * ربط الازرار مع الراوتر العام
  ******************************************/
 async function handleRouletteButtons(i) {
   if (!i.isButton || !i.isButton()) return;
@@ -5307,7 +5305,7 @@ async function handleRouletteButtons(i) {
 
 
 ////////////////////////////////////////////
-// <:icons8correct1001:1407440011183259699> تريفيا - لعبة الأسئلة والأجوبة (مُدمجة مع الراوتر)
+// <:icons8correct1002:1415979896433278986> تريفيا - لعبة الاسئلة والاجوبة (مُدمجة مع الراوتر)
 ////////////////////////////////////////////
 
 const triviaGames = {}; // channelId -> { round, used, scores, msg, timer, currentIndex }
@@ -5320,11 +5318,11 @@ async function handleTriviaStartMessage(msg) {
   return startTriviaGame(msg.channel, msg.author);
 }
 
-// تشغيل تريفيا على القناة مباشرة (بدون اختلاط مع أي تفاعل)
+// تشغيل تريفيا على القناة مباشرة (بدون اختلاط مع اي تفاعل)
 async function startTriviaGame(channel, starterUser) {
   const channelId = channel.id;
 
-  // تنظيف أي جولة قديمة في نفس القناة
+  // تنظيف اي جولة قديمة في نفس القناة
   if (triviaGames[channelId]?.timer) clearTimeout(triviaGames[channelId].timer);
 
   triviaGames[channelId] = {
@@ -5364,7 +5362,7 @@ async function nextTriviaRound(channelId) {
   const imagePath = path.join(__dirname, "images", "questions", questionDoc.image);
   const attachment = new AttachmentBuilder(imagePath);
 
-  // أزرار الاختيارات 1..4
+  // ازرار الاختيارات 1..4
   const round = state.round;
   const buttons = new ActionRowBuilder().addComponents(
     [1, 2, 3, 4].map((num) =>
@@ -5377,14 +5375,14 @@ async function nextTriviaRound(channelId) {
 
   await state.msg.edit({ files: [attachment], components: [buttons], content: "" });
 
-  // مؤقت 60 ثانية لإنهاء اللعبة إذا لم تُجب إجابة صحيحة في هذه الجولة
+  // مؤقت 60 ثانية لانهاء اللعبة اذا لم تُجب اجابة صحيحة في هذه الجولة
   if (state.timer) clearTimeout(state.timer);
   state.timer = setTimeout(() => {
     triviaEndGame(channelId);
   }, 60000);
 }
 
-// زر إجابة: trivia_answer_{round}_{choice}
+// زر اجابة: trivia_answer_{round}_{choice}
 async function handleTriviaAnswerButton(i) {
   if (!i.customId.startsWith("trivia_answer_")) return;
 
@@ -5394,15 +5392,15 @@ async function handleTriviaAnswerButton(i) {
 
   const channelId = i.channel.id;
   const state = triviaGames[channelId];
-  if (!state) return i.reply({ content: "<:icons8wrong100:1407439999611310130> لا توجد لعبة تريفيا جارية.", ephemeral: true });
+  if (!state) return i.reply({ content: "<:icons8wrong1001:1415979909825695914> لا توجد لعبة تريفيا جارية.", ephemeral: true });
 
   if (btnRound !== state.round) {
-    return i.reply({ content: "⌛ هذه الجولة انتهت أو لم تبدأ بعد.", ephemeral: true });
+    return i.reply({ content: "⌛ هذه الجولة انتهت او لم تبدا بعد.", ephemeral: true });
   }
 
   const questionDoc = questions[state.currentIndex];
   if (!questionDoc) {
-    return i.reply({ content: "<:icons8wrong100:1407439999611310130> حدث خطأ في تحميل السؤال.", ephemeral: true });
+    return i.reply({ content: "<:icons8wrong1001:1415979909825695914> حدث خطا في تحميل السؤال.", ephemeral: true });
   }
 
   if (choice === questionDoc.answer) {
@@ -5410,8 +5408,8 @@ async function handleTriviaAnswerButton(i) {
     const userId = i.user.id;
     state.scores.set(userId, (state.scores.get(userId) || 0) + 1);
 
-    await i.reply({ content: "<:icons8correct1001:1407440011183259699> إجابة صحيحة! كسبت 1000 <:ryal:1407444550863032330> 💸", ephemeral: true });
-    await updateBalanceWithLog(db, userId, 1000, "🎮 تريفيا - إجابة صحيحة").catch(() => {});
+    await i.reply({ content: "<:icons8correct1002:1415979896433278986> اجابة صحيحة! كسبت 1000 <:ryal:1407444550863032330> 💸", ephemeral: true });
+    await updateBalanceWithLog(db, userId, 1000, "🎮 تريفيا - اجابة صحيحة").catch(() => {});
 
     if (state.timer) {
       clearTimeout(state.timer);
@@ -5420,7 +5418,7 @@ async function handleTriviaAnswerButton(i) {
     return nextTriviaRound(channelId);
   }
 
-  return i.reply({ content: "<:icons8wrong100:1407439999611310130> إجابتك غلط، حاول مرة أخرى.", ephemeral: true });
+  return i.reply({ content: "<:icons8wrong1001:1415979909825695914> اجابتك غلط، حاول مرة اخرى.", ephemeral: true });
 }
 
 async function triviaEndGame(channelId) {
@@ -5432,8 +5430,8 @@ async function triviaEndGame(channelId) {
   const top = [...state.scores.entries()].sort((a, b) => b[1] - a[1]);
   const winners =
     top.length > 0
-      ? top.map(([id, score], i) => `**${i + 1}. <@${id}>** — ${score} إجابات صحيحة`).join("\n")
-      : "لا أحد أجاب 😢";
+      ? top.map(([id, score], i) => `**${i + 1}. <@${id}>** — ${score} اجابات صحيحة`).join("\n")
+      : "لا احد اجاب 😢";
 
 const buttons = new ActionRowBuilder().addComponents(
   new ButtonBuilder()
@@ -5444,9 +5442,9 @@ const buttons = new ActionRowBuilder().addComponents(
 
   new ButtonBuilder()
     .setCustomId("trivia_end")
-    .setLabel("إنهاء")
+    .setLabel("انهاء")
     .setStyle(ButtonStyle.Secondary)
-    .setEmoji("1407439999611310130")
+    .setEmoji("1415979909825695914")
 );
 
   await state.msg.edit({
@@ -5456,14 +5454,14 @@ const buttons = new ActionRowBuilder().addComponents(
   });
 }
 
-// أزرار إدارة نهاية/إعادة
+// ازرار ادارة نهاية/اعادة
 async function handleTriviaControlButtons(i) {
   if (i.customId === "trivia_restart") {
     await i.deferUpdate().catch(() => {});
     return startTriviaGame(i.channel, i.user);
   }
   if (i.customId === "trivia_end") {
-    await i.update({ content: " تم إنهاء اللعبة.", components: [], files: [] }).catch(() => {});
+    await i.update({ content: " تم انهاء اللعبة.", components: [], files: [] }).catch(() => {});
     if (triviaGames[i.channel.id]?.timer) clearTimeout(triviaGames[i.channel.id].timer);
     delete triviaGames[i.channel.id];
   }
@@ -5471,7 +5469,7 @@ async function handleTriviaControlButtons(i) {
 
 
 ////////////////////////////////////////////
-// 🎮 أمر قمار الموحد (القائمة) — عبر الراوتر
+// 🎮 امر قمار الموحد (القائمة) — عبر الراوتر
 ////////////////////////////////////////////
 
 async function handleGambleMainMenu(msg) {
@@ -5479,12 +5477,12 @@ async function handleGambleMainMenu(msg) {
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId("gamble_solo")
-      .setLabel("الألعاب الفردية")
+      .setLabel("الالعاب الفردية")
       .setStyle(ButtonStyle.Secondary)
       .setEmoji("1407422287652720750"),
     new ButtonBuilder()
       .setCustomId("gamble_multi")
-      .setLabel(" الألعاب الجماعية")
+      .setLabel(" الالعاب الجماعية")
       .setStyle(ButtonStyle.Secondary)
       .setEmoji("1407423118993002668")
   );
@@ -5496,7 +5494,7 @@ async function handleGambleMainMenu(msg) {
   });
 }
 
-// عرض قائمة الألعاب (فردي/جماعي)
+// عرض قائمة الالعاب (فردي/جماعي)
 async function handleGambleCategory(i) {
   const isSolo = i.customId === "gamble_solo";
 
@@ -5504,7 +5502,7 @@ async function handleGambleCategory(i) {
     { label: " روليت", value: "soloroulette", emoji: { id: "1407429268350439535", animated: true } },
     { label: " مكينة السلوت", value: "soloslot", emoji: { id: "1407428069844848741", animated: true } },
     { label: " صندوق الحظ", value: "solomystery", emoji: { id: "1407431521631076412", animated: true } },
-    { label: " تحدي الأوراق", value: "solocard", emoji: { id: "1407431501792149546", animated: true } },
+    { label: " تحدي الاوراق", value: "solocard", emoji: { id: "1407431501792149546", animated: true } },
     { label: " بلاك جاك", value: "soloblackjack", emoji: { id: "1407431511564619797", animated: true } },
     { label: " باكشوت", value: "solobuckshot", emoji: { id: "1407431387606290599", animated: true } }
   ];
@@ -5528,7 +5526,7 @@ async function handleGambleCategory(i) {
   const buttons = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId(isSolo ? "solostats" : "multi_stats")
-      .setLabel(" إحصائيات")
+      .setLabel(" احصائيات")
       .setStyle(ButtonStyle.Secondary)
       .setEmoji("1407426721619382313"),
     new ButtonBuilder()
@@ -5550,12 +5548,12 @@ async function handleBackToMain(i) {
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId("gamble_solo")
-      .setLabel("الألعاب الفردية")
+      .setLabel("الالعاب الفردية")
       .setStyle(ButtonStyle.Secondary)
       .setEmoji("1407422287652720750"),
     new ButtonBuilder()
       .setCustomId("gamble_multi")
-      .setLabel(" الألعاب الجماعية")
+      .setLabel(" الالعاب الجماعية")
       .setStyle(ButtonStyle.Secondary)
       .setEmoji("1407423118993002668")
   );
@@ -5579,7 +5577,7 @@ async function handleMultiStatsButton(i) {
 
 
 /******************************************
- * اختصارات نصية للألعاب الفردية — عبر الراوتر
+ * اختصارات نصية للالعاب الفردية — عبر الراوتر
  ******************************************/
 async function handleTextGameShortcut(msg, gameId) {
   const bal = await getBalance(msg.author.id);
@@ -5588,10 +5586,10 @@ async function handleTextGameShortcut(msg, gameId) {
 
 
 /******************************************
- * أوامر المحفظة والتحويل — عبر الراوتر
+ * اوامر المحفظة والتحويل — عبر الراوتر
  ******************************************/
 
-// تحميل الأفاتار/الرسم كما هو
+// تحميل الافاتار/الرسم كما هو
 async function loadUserAvatar(user) {
   const url = user.displayAvatarURL({ extension: "png", size: 256 });
   return await loadImage(url);
@@ -5613,7 +5611,7 @@ function drawText(ctx, text, x, y, font = "100px", color = "#b0d4eb", align = "c
   ctx.fillText(text, x, y);
 }
 
-// أمر "رصيد"
+// امر "رصيد"
 async function handleWalletMessage(msg) {
   const balance = await getBalance(msg.author.id);
   const background = await loadImage("./صوره المحفظه.png");
@@ -5632,7 +5630,7 @@ async function handleWalletMessage(msg) {
   return msg.reply({ files: [attachment] });
 }
 
-// أمر "تحويل @شخص مبلغ"
+// امر "تحويل @شخص مبلغ"
 async function handleTransferMessage(msg) {
   const content = msg.content.trim();
   // صيغة متسامحة: "تحويل" ثم منشن ثم رقم
@@ -5642,15 +5640,15 @@ async function handleTransferMessage(msg) {
   const amount = parseInt(parts[2], 10);
 
   if (!mention || isNaN(amount) || amount <= 0) {
-    return await msg.reply("<:icons8wrong100:1407439999611310130> الاستخدام الصحيح: تحويل @شخص 1000");
+    return await msg.reply("<:icons8wrong1001:1415979909825695914> الاستخدام الصحيح: تحويل @شخص 1000");
   }
   if (mention.id === msg.author.id) {
-    return await msg.reply("<:icons8wrong100:1407439999611310130> لا يمكنك تحويل رصيد لنفسك.");
+    return await msg.reply("<:icons8wrong1001:1415979909825695914> لا يمكنك تحويل رصيد لنفسك.");
   }
 
   const senderBalance = await getBalance(msg.author.id);
   if (senderBalance < amount) {
-    return await msg.reply("<:icons8wrong100:1407439999611310130> لا تملك رصيد كافي لإتمام التحويل.");
+    return await msg.reply("<:icons8wrong1001:1415979909825695914> لا تملك رصيد كافي لاتمام التحويل.");
   }
 
   await addBalance(msg.author.id, -amount);
