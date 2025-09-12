@@ -54,11 +54,11 @@ async function handleHarfLobbyInteraction(interaction) {
   if (interaction.customId === "harf_join") {
     const alreadyJoined = game.players.find(p => p.id === userId);
     if (alreadyJoined) {
-      return interaction.reply({ content: "<:icons8wrong100:1407439999611310130> أنت بالفعل في اللوبي.", ephemeral: true });
+      return interaction.reply({ content: "<:icons8wrong1001:1415979909825695914> أنت بالفعل في اللوبي.", ephemeral: true });
     }
 
     if (game.players.length >= 4) {
-      return interaction.reply({ content: "<:icons8wrong100:1407439999611310130> اللوبي ممتلئ.", ephemeral: true });
+      return interaction.reply({ content: "<:icons8wrong1001:1415979909825695914> اللوبي ممتلئ.", ephemeral: true });
     }
 
     game.players.push({ id: userId, username: interaction.user.username });
@@ -70,7 +70,7 @@ async function handleHarfLobbyInteraction(interaction) {
   if (interaction.customId === "harf_leave") {
     const index = game.players.findIndex(p => p.id === userId);
     if (index === -1) {
-      return interaction.reply({ content: "<:icons8wrong100:1407439999611310130> أنت لست في اللوبي.", ephemeral: true });
+      return interaction.reply({ content: "<:icons8wrong1001:1415979909825695914> أنت لست في اللوبي.", ephemeral: true });
     }
 
     game.players.splice(index, 1);
@@ -86,10 +86,10 @@ async function handleHarfLobbyInteraction(interaction) {
   if (interaction.customId === "harf_start") {
     // السماح لأي لاعب بالبدء طالما العدد بين [2..4]
     if (game.players.length < 2) {
-      return interaction.reply({ content: "<:icons8wrong100:1407439999611310130> تحتاج على الأقل إلى لاعبين.", ephemeral: true });
+      return interaction.reply({ content: "<:icons8wrong1001:1415979909825695914> تحتاج على الأقل إلى لاعبين.", ephemeral: true });
     }
     if (game.players.length > 4) {
-      return interaction.reply({ content: "<:icons8wrong100:1407439999611310130> الحد الأقصى 4 لاعبين.", ephemeral: true });
+      return interaction.reply({ content: "<:icons8wrong1001:1415979909825695914> الحد الأقصى 4 لاعبين.", ephemeral: true });
     }
 
     game.state = "playing";
@@ -248,7 +248,7 @@ async function handleHarfInteraction(interaction) {
   const userId = interaction.user.id;
   const currentPlayer = game.players[game.turn];
   if (userId !== currentPlayer.id) {
-    return interaction.reply({ content: "<:icons8wrong100:1407439999611310130> ليس دورك!", ephemeral: true });
+    return interaction.reply({ content: "<:icons8wrong1001:1415979909825695914> ليس دورك!", ephemeral: true });
   }
 
   // الضغط على حرف من اليد
@@ -290,7 +290,7 @@ async function handleHarfInteraction(interaction) {
       await msg.edit({ components: [baseRow, ...handRows] });
     }
 
-    return interaction.reply({ content: `<:icons8correct1001:1407440011183259699> اخترت الحرف **${letter}**، الآن اختر أي حرف أساسي لتبديله.`, ephemeral: true });
+    return interaction.reply({ content: `<:icons8correct1002:1415979896433278986> اخترت الحرف **${letter}**، الآن اختر أي حرف أساسي لتبديله.`, ephemeral: true });
   }
 
   // زر الانسحاب أثناء اللعب
@@ -313,7 +313,7 @@ async function handleHarfInteraction(interaction) {
   // الضغط على حرف أساسي لتبديله
   if (interaction.customId.startsWith("harf_base_")) {
     if (!game.selection) {
-      return interaction.reply({ content: "<:icons8wrong100:1407439999611310130> اختر حرف من حروفك أولًا.", ephemeral: true });
+      return interaction.reply({ content: "<:icons8wrong1001:1415979909825695914> اختر حرف من حروفك أولًا.", ephemeral: true });
     }
 
     const baseIndex = parseInt(interaction.customId.split("_")[2]);
@@ -325,12 +325,12 @@ async function handleHarfInteraction(interaction) {
 
     const hand = game.playerHands[userId];
     const handIndex = hand.indexOf(newLetter);
-    if (handIndex === -1) return interaction.reply({ content: "<:icons8wrong100:1407439999611310130> حدث خطأ، الحرف غير موجود في يدك.", ephemeral: true });
+    if (handIndex === -1) return interaction.reply({ content: "<:icons8wrong1001:1415979909825695914> حدث خطأ، الحرف غير موجود في يدك.", ephemeral: true });
 
     game.selection = null;
 
     if (dictionary.has(word)) {
-      // <:icons8correct1001:1407440011183259699> الكلمة موجودة
+      // <:icons8correct1002:1415979896433278986> الكلمة موجودة
       game.letters[baseIndex] = newLetter;
       hand.splice(handIndex, 1); // نحذف الحرف من يد اللاعب
 
@@ -378,15 +378,15 @@ async function startVotingOnInvalidWord(interaction, word, baseIndex, newLetter)
     .setTitle("📋 تصويت على الكلمة")
     .setDescription(`🗳️ <@${userId}> اقترح الكلمة: **${word}**
 
-<:icons8correct1001:1407440011183259699> إذا كانت الكلمة منطقية وافقوا عليها.
-<:icons8wrong100:1407439999611310130> إذا لا، ارفضوها.
+<:icons8correct1002:1415979896433278986> إذا كانت الكلمة منطقية وافقوا عليها.
+<:icons8wrong1001:1415979909825695914> إذا لا، ارفضوها.
 
 عدد المصوتين: ${voters.length}`)
     .setColor("#e67e22");
 
   const row = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId("harf_vote_yes").setLabel(" اوافق").setStyle(ButtonStyle.Success).setEmoji("1407440011183259699"),
-    new ButtonBuilder().setCustomId("harf_vote_no").setLabel(" أرفض").setStyle(ButtonStyle.Danger).setEmoji("1407439999611310130")
+    new ButtonBuilder().setCustomId("harf_vote_yes").setLabel(" اوافق").setStyle(ButtonStyle.Success).setEmoji("1415979896433278986"),
+    new ButtonBuilder().setCustomId("harf_vote_no").setLabel(" أرفض").setStyle(ButtonStyle.Danger).setEmoji("1415979909825695914")
   );
 
   const msg = await interaction.channel.send({ embeds: [embed], components: [row] });
@@ -403,11 +403,11 @@ async function handleVote(interaction) {
   const userId = interaction.user.id;
 
   if (userId === voteData.by) {
-    return interaction.reply({ content: "<:icons8wrong100:1407439999611310130> لا يمكنك التصويت على كلمتك.", ephemeral: true });
+    return interaction.reply({ content: "<:icons8wrong1001:1415979909825695914> لا يمكنك التصويت على كلمتك.", ephemeral: true });
   }
 
   if (voteData.votes[userId]) {
-    return interaction.reply({ content: "<:icons8wrong100:1407439999611310130> لقد صوتت مسبقًا.", ephemeral: true });
+    return interaction.reply({ content: "<:icons8wrong1001:1415979909825695914> لقد صوتت مسبقًا.", ephemeral: true });
   }
 
   const value = interaction.customId === "harf_vote_yes" ? "yes" : "no";
@@ -435,8 +435,8 @@ async function finishVote(channel) {
   const hand = game.playerHands[by];
 
   const resultMessage = yes > no
-    ? `<:icons8correct1001:1407440011183259699> تم قبول الكلمة بأغلبية (${yes} مقابل ${no})`
-    : `<:icons8wrong100:1407439999611310130> تم رفض الكلمة (${yes} مقابل ${no})`;
+    ? `<:icons8correct1002:1415979896433278986> تم قبول الكلمة بأغلبية (${yes} مقابل ${no})`
+    : `<:icons8wrong1001:1415979909825695914> تم رفض الكلمة (${yes} مقابل ${no})`;
 
   const resultMsg = await channel.send(resultMessage);
   setTimeout(() => resultMsg.delete().catch(() => {}), 5000);
