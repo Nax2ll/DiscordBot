@@ -5,7 +5,8 @@ const {
   ButtonStyle,
   AttachmentBuilder
 } = require("discord.js");
-const { getBalance, subtractBalance } = require("./utils");
+
+const { getBalance, subtractBalance, recordTransaction } = require("./utils");
 
 // مؤقتًا لتخزين الغرض المختار لكل مستخدم
 const selectedRoleItem = new Map();
@@ -79,7 +80,9 @@ module.exports = async function handleRolesSection(interaction, db) {
 
     if (i.customId === "confirm_roles_purchase") {
       const itemId = selectedRoleItem.get(i.user.id);
-      if (!itemId) return i.reply({ content: " اختر غرضًا أولاً. <:icons8wrong1001:1415979909825695914>", ephemeral: true });
+      if (!itemId) {
+        return i.reply({ content: " اختر غرضًا أولاً. <:icons8wrong1001:1415979909825695914>", ephemeral: true });
+      }
 
       const item = roleItems.find(it => it.itemId === itemId);
       const guild = i.guild;
@@ -94,20 +97,42 @@ module.exports = async function handleRolesSection(interaction, db) {
         return i.reply({ content: " لديك هذا الرول بالفعل! <:icons8wrong1001:1415979909825695914>", ephemeral: true });
       }
 
+      // تحقق الرصيد
       const balance = await getBalance(i.user.id, db);
       if (balance < item.price) {
         return i.reply({ content: ` لا تملك رصيداً كافياً. السعر: ${item.price} <:ryal:1407444550863032330>`, ephemeral: true });
       }
 
+      // خصم وإسناد الرول
       await subtractBalance(i.user.id, item.price, db);
       await member.roles.add(role).catch(() => {});
+
+      // جلب الرصيد بعد الخصم (لازم لعرضه في كشف الحساب إن حبيت)
+      const balanceAfter = await getBalance(i.user.id, db);
+
+// اسم العرض للمشتري (nick أولاً ثم globalName ثم username)
+const buyerName =
+  i.member?.displayName ||
+  i.user?.globalName ||
+  i.user?.username ||
+  String(i.user.id);
+
+// تسجيل العملية في كشف الحساب
+await recordTransaction(db, {
+  userId: i.user.id,
+  userName: buyerName, // لقطة اسم المشتري لعرضها في كشف الحساب
+  amount: -item.price,
+  reason: `شراء رول: ${item.name}`,
+  guildId: i.guildId,
+  channelId: i.channelId,
+  ref: { type: "shop_role", itemId: item.itemId, roleId: item.roleId },
+  balanceAfter
+});
 
       await i.reply({
         content: ` تم شراء الرول: <:icons8correct1002:1415979896433278986> **${item.name}** بمبلغ ${item.price} <:ryal:1407444550863032330> .`,
         ephemeral: true
       });
     }
-
-
   });
 };

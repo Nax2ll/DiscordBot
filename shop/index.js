@@ -1,10 +1,7 @@
 module.exports = async function handleShopInteraction(interaction, db) {
   const value = interaction.values?.[0];
   const id = interaction.customId;
-console.log("📌 index interaction:", {
-  id: interaction.customId,
-  value: interaction.values ? interaction.values[0] : null,
-});
+
 
   // 🧢 قسم الرولات
   if (value === "section_roles" || id === "roles_menu") {

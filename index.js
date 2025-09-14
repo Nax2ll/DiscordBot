@@ -6,7 +6,7 @@
 /******************************************
  * 1)         المتغيّرات العامة          *
  ******************************************/
-const { Client, GatewayIntentBits, Events, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder,  ModalBuilder,  TextInputBuilder,TextInputStyle,AttachmentBuilder,StringSelectMenuOptionBuilder
+const { Client, GatewayIntentBits, Events, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder,  ModalBuilder,  TextInputBuilder,TextInputStyle,AttachmentBuilder,StringSelectMenuOptionBuilder, Emoji
  } = require("discord.js");
 const { MongoClient } = require("mongodb");
 const mongoose = require('mongoose');
@@ -155,6 +155,7 @@ async function connectToMongo() {
 
 
   } catch (err) {
+
     console.error(" MongoDB Connection Error:", err);
   }
 }
@@ -433,18 +434,18 @@ ui.buttonExact("solostats", handleSoloStatsButton);
 ui.buttonExact("multi_stats", handleMultiStatsButton);
 
 ui.messageExact("روليت", (msg) => handleTextGameShortcut(msg, "soloroulette"));
-ui.messageExact("بلاكجاك", (msg) => handleTextGameShortcut(msg, "soloblackjack"));
-ui.messageExact("بلاك جاك", (msg) => handleTextGameShortcut(msg, "soloblackjack"));
+ui.messageExact("بلاكجاك", (msg) => handleTextGameShortcut(msg, "blackjack"));
+ui.messageExact("بلاك جاك", (msg) => handleTextGameShortcut(msg, "blackjack"));
 ui.messageExact("سلوت ", (msg) => handleTextGameShortcut(msg, "soloslot"));
 ui.messageExact("صندوق الحظ", (msg) => handleTextGameShortcut(msg, "solomystery"));
 ui.messageExact("صندوق ", (msg) => handleTextGameShortcut(msg, "solomystery"));
 
 // مجموعات نصوص لتحدي الاوراق وباكشوت
-const cardTriggers = ["تحدي الاوراق", "الاوراق", "الاوراق", "تحدي الاوراق"];
-const buckshotTriggers = ["باكشوت", "باك شوت", "بكشوت", "بك شوت", "باكشوت ", "باك شوت"];
+const cardTriggers = ["تحدي الاوراق", "الاوراق", "الأوراق", "تحدي الأوراق"];
+const buckshotTriggers = ["باكشوت", "باك شوت", "بكشوت", "بك شوت"];
 
-for (const t of cardTriggers) ui.messageExact(t, (msg) => handleTextGameShortcut(msg, "solocard"));
-for (const t of buckshotTriggers) ui.messageExact(t, (msg) => handleTextGameShortcut(msg, "solobuckshot"));
+for (const t of cardTriggers) ui.messageExact(t, (msg) => handleTextGameShortcut(msg, "solobus"));
+for (const t of buckshotTriggers) ui.messageExact(t, (msg) => handleTextGameShortcut(msg, "buckshot"));
 
 ui.messageExact("رصيد", handleWalletMessage);
 
@@ -565,20 +566,193 @@ ui.buttonExact("minigame_stats", async (i) => {
 
 
 /******************************************
- * 3)        نظام المحفظة الجديد         *
+ * 3)        نظام المحفظة الجديد          *
  ******************************************/
-async function getBalance(userId) {
-  const user = await db.collection("users").findOne({ userId: String(userId) });
+
+// المعرّف الثابت لقناة الترحيب
+const WELCOME_CHANNEL_ID = "1393900700907606109";
+
+// مُساعد: إنشاء مصنع مجاني للمستخدم إن لم يكن موجوداً
+// إنشاء مصنع مجاني للمستخدم باسم النيك نيم الحالي
+async function createFreeFactoryForUser(ownerId, options = {}) {
+  const uid = String(ownerId);
+  const now = new Date();
+
+  // تحقق: مصنع موجود مسبقاً؟
+  const existing = await db.collection("companies").findOne({ ownerId: uid, type: "factory" });
+  if (existing) {
+    return { created: false, name: existing.name, ipoPrice: existing.ipoPrice };
+  }
+
+  // دالة داخلية لاشتقاق اسم العرض (النيك نيم) بأفضل محاولة
+  const resolveDisplayName = async () => {
+    try {
+      // 1) لو تم تمرير العضو مباشرة
+      if (options.member) {
+        const m = options.member;
+        const nick = m.displayName || m.nickname || m.user?.globalName || m.user?.username;
+        if (nick) return nick;
+      }
+
+      // 2) لو تم تمرير guild
+      if (options.guild && typeof options.guild.members?.fetch === "function") {
+        const m = await options.guild.members.fetch(uid).catch(() => null);
+        if (m) {
+          const nick = m.displayName || m.nickname || m.user?.globalName || m.user?.username;
+          if (nick) return nick;
+        }
+      }
+
+      // 3) محاولة عبر قناة معروفة (WELCOME_CHANNEL_ID) أو channelId الممرر
+      const channelIdHint = options.channelId || (typeof WELCOME_CHANNEL_ID !== "undefined" ? WELCOME_CHANNEL_ID : null);
+      if (typeof client !== "undefined" && channelIdHint) {
+        let ch = client?.channels?.cache?.get(channelIdHint);
+        if (!ch && typeof client?.channels?.fetch === "function") {
+          ch = await client.channels.fetch(channelIdHint).catch(() => null);
+        }
+        const guild = ch?.guild;
+        if (guild) {
+          const m = await guild.members.fetch(uid).catch(() => null);
+          if (m) {
+            const nick = m.displayName || m.nickname || m.user?.globalName || m.user?.username;
+            if (nick) return nick;
+          }
+        }
+      }
+
+      // 4) احتياط: اسم المستخدم من API
+      if (typeof client !== "undefined" && typeof client.users?.fetch === "function") {
+        const u = await client.users.fetch(uid).catch(() => null);
+        if (u?.globalName || u?.username) return u.globalName || u.username;
+      }
+    } catch {}
+
+    // 5) احتياط أخير
+    return `User-${uid.slice(-4)}`;
+  };
+
+  // اسم الشركة = النيك نيم الحالي (أو الخيارات إن مررت اسماً صريحاً)
+  const displayName = options.name || await resolveDisplayName();
+  const safeName = String(displayName).trim().slice(0, 64) || `User-${uid.slice(-4)}`;
+  const name = safeName; // بدون بادئة "مصنع" كما طلبت
+
+  // إعداد سعر الطرح (1..100)
+  const ipoPrice =
+    Number.isInteger(options.ipoPrice) && options.ipoPrice >= 1 && options.ipoPrice <= 100
+      ? options.ipoPrice
+      : 10;
+
+  // نفس منطق اختيار الموظفين كما في الكود الأصلي
+  const serverMembers = [
+    { name: "نايل", id: "532264405476573224" },{ name: "ايفا", id: "1270057947334185053" },
+    { name: "روبي", id: "1374244101205131274" },{ name: "شكشوكه", id: "1106288355228004372" },
+    { name: "لافندر", id: "545613574874071063" },{ name: "كركم", id: "1097381729007849554" },
+    { name: "جبنة", id: "359427305979772938" },{ name: "خالد", id: "734187812236034108" },
+    { name: "وحيدا", id: "696302530937880666" },{ name: "سفن", id: "955228953113681970" }
+  ];
+  const shuffled = [...serverMembers].sort(() => 0.5 - Math.random());
+  const selected = shuffled.slice(0, 5);
+  const roles = ["حفار", "حداد", "مجوهراتي", "مهندس", "طبيب"];
+  const salaries = [4000, 5000, 7000, 8000, 6000];
+  const employees = selected.map((u, i) => ({
+    role: roles[i],
+    name: u.name,
+    userId: u.id,
+    salary: salaries[i],
+    loyalty: 1.0
+  }));
+
+  // إدخال الشركة (بدون خصم رصيد)
+  await db.collection("companies").insertOne({
+    ownerId: uid,
+    type: "factory",
+    name,
+    ipoPrice,
+    level: 1,
+    reputation: { score: 100, loyalty: 1.0 },
+    employees,
+    upgrades: [],
+    inventory: {},
+    events: [],
+    dailyIncome: 12500,
+    lastCollected: now,
+    lastProcessed: now,
+    grant: { source: "wallet-open", at: now } // منحة مجانية عند فتح المحفظة
+  });
+
+  // إدخال السهم الخاص بالمصنع
+  await db.collection("stocks").insertOne({
+    symbol: `FAC-${uid}`,
+    name,
+    type: "player",
+    price: ipoPrice,
+    ownerId: uid,
+    cursorDate: "2021-01-01"
+  });
+
+  return { created: true, name, ipoPrice };
+}
+// getBalance: ينشئ محفظة 100000 ريال + يسجل وقت الفتح + ينشئ مصنعاً مجاناً + يرسل رسالة ترحيب في قناة محددة
+// ملاحظة: يتوقع وجود متغير client في نفس السياق (discord.js Client)
+async function getBalance(userId, notifyTarget = null) {
+  const uid = String(userId);
+  const user = await db.collection("users").findOne({ userId: uid });
+
+  // مُرسِل إشعار عام (احتياطي: يستخدم notifyTarget إن توفر)
+  const sendNotifyFallback = async (text) => {
+    try {
+      if (!notifyTarget) return;
+      if (typeof notifyTarget === "function") return await notifyTarget(text);
+      if (notifyTarget && typeof notifyTarget.send === "function") return await notifyTarget.send(text);
+    } catch {}
+  };
+
+  // مُرسل القناة الثابتة
+  const sendToWelcomeChannel = async (text) => {
+    try {
+      // يتطلب client (discord.js) متاح في النطاق
+      const ch =
+        client?.channels?.cache?.get(WELCOME_CHANNEL_ID) ||
+        (client?.channels?.fetch ? await client.channels.fetch(WELCOME_CHANNEL_ID).catch(() => null) : null);
+      if (ch && typeof ch.send === "function") {
+        return await ch.send(text);
+      }
+      // في حال الفشل، جرّب الإشعار الاحتياطي إن توفّر
+      return await sendNotifyFallback(text);
+    } catch (e) {
+      console.error("welcome notify error:", e);
+      return await sendNotifyFallback(text);
+    }
+  };
 
   if (!user) {
-    // انشاء محفظة جديدة تلقائيًا
+    const now = new Date();
+
+    // إنشاء محفظة جديدة
+    const openingBonus = 100000; // مكافأة الفتح
     const newUser = {
-      userId: String(userId),
-      wallet: 1000,
-      stats: { createdAt: new Date() }
+      userId: uid,
+      wallet: 100000,
+      walletOpenedAt: now,         // وقت فتح الحساب
+      stats: { createdAt: now }    // الحقل السابق للإحصاءات
     };
     await db.collection("users").insertOne(newUser);
-    return 1000;
+
+    // إنشاء مصنع مجاني (مرة واحدة فقط)
+    const factory = await createFreeFactoryForUser(uid);
+
+    // رسالة الترحيب — تُرسل دائماً إلى القناة الثابتة
+    const lines = [
+      `<@${uid}>`,
+      "🏦 تم فتح حسابك في بنك Milkyway.",
+      `رقم حسابك: ${uid}`,
+      `تمت إضافة ${openingBonus.toLocaleString("en-US")} ريال دعماً من معالي نايل.`,
+      `🏭 تم إضافة مشروع مصنع مجاني باسمك${factory.name ? `: ${factory.name}` : ""}.`
+    ];
+    await sendToWelcomeChannel(lines.join("\n"));
+
+    // أعِد قيمة الرصيد الفعلي
+    return openingBonus;
   }
 
   return user.wallet || 0;
@@ -810,25 +984,29 @@ function buildRowComponents(letters, colors, userId, attemptNo, action, enabled)
   // قلب الترتيب شكليًا فقط كما هو مطلوب في الصف
   letterButtons.reverse();
 
-  // زر الإجراء (انسحاب أو إعادة) — مفعّل فقط إذا enabled=true وإلا Disabled + Secondary
-  let actionButton;
-  if (action === "restart") {
-    actionButton = {
-      type: 2,
-      style: enabled ? 3 : 2, // Success عند التمكين، وإلا Secondary
-      label: "إعادة",
-      custom_id: `wordle_restart_${userId}_${attemptNo}`,
-      disabled: !enabled
-    };
-  } else {
-    actionButton = {
-      type: 2,
-      style: enabled ? 4 : 2, // Danger عند التمكين، وإلا Secondary
-      label: "انسحاب",
-      custom_id: `wordle_quit_${userId}_${attemptNo}`,
-      disabled: !enabled
-    };
-  }
+// زر الإجراء (انسحاب أو إعادة) — مفعّل فقط إذا enabled=true وإلا Disabled + Secondary
+let actionButton;
+if (action === "restart") {
+  actionButton = {
+    type: 2,
+    style: enabled ? 3 : 2, // Success عند التمكين، وإلا Secondary
+    // لو تبي إعادة تكون إيموجي فقط أيضاً:
+    // emoji: { name: "🔁" },
+    emoji: { id: "1416507901425614948", name: ":icons8retry100:" }, // إيموجي مخصص
+    custom_id: `wordle_restart_${userId}_${attemptNo}`,
+    disabled: !enabled
+  };
+} else {
+  // انسحاب بإيموجي فقط (بدون label)
+  actionButton = {
+    type: 2,
+    style: enabled ? 4 : 2, // Danger عند التمكين، وإلا Secondary
+    emoji: { id: "1408077754557136926", name: ":icons8leave100:" }, // إيموجي مخصص
+    // بديل يونيكود إن حبيت: emoji: { name: "🚪" },
+    custom_id: `wordle_quit_${userId}_${attemptNo}`,
+    disabled: !enabled
+  };
+}
 
   return {
     type: 1,
@@ -853,16 +1031,16 @@ async function buildAlphabetBoardImage(states) {
   const ctx = canvas.getContext('2d');
 
   // خلفية
-  ctx.fillStyle = "#2c2f33";
+  ctx.fillStyle = "#000000ff";
   ctx.fillRect(0, 0, width, height);
 
   // عنوان
   ctx.fillStyle = "#ffffff";
-  ctx.font = "bold 18px Cairo";
+  ctx.font = "bold 35px Cairo";
   ctx.textAlign = "start";
   ctx.textBaseline = "alphabetic";
   ctx.direction = "rtl";
-  ctx.fillText("لوحة الحروف", padding, padding + 16);
+  ctx.fillText("لوحة الحروف", padding + 275, padding + 16);
 
   // رسم الحروف يمين ➜ يسار بدون أي قلب
   let idx = 0;
@@ -893,7 +1071,7 @@ async function buildAlphabetBoardImage(states) {
 
       // الحرف
       ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 28px Cairo";
+      ctx.font = "bold 28px Sans-Serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.direction = "rtl";
@@ -943,7 +1121,7 @@ async function sendBoardMessage(channel, session, finalMsg) {
   const remaining = WORDLE_MAX_ATTEMPTS - session.attempts;
   const baseLine = finalMsg
     ? (session.won
-        ? `✅ أحسنت! الكلمة: ${session.word} — تم الفوز.`
+        ? `<:icons8correct1002:1415979896433278986> أحسنت! الكلمة: ${session.word} — تم الفوز.`
         : `<:icons8wrong1001:1415979909825695914> انتهت الجولة. الكلمة كانت: ${session.word}`)
     : `📝 أرسل كلمة من ${WORDLE_LEN} أحرف. (محاولات متبقية: ${remaining})`;
 
@@ -968,10 +1146,9 @@ async function sendBoardMessage(channel, session, finalMsg) {
 }
 
 
-// بدء جلسة جديدة لمستخدم
 async function startWordleForUser(channel, userId) {
   if (!WORDLE_WORDS.length) {
-    await channel.send("<:icons8wrong1001:1415979909825695914> لا توجد كلمات بطول مناسب (4 أحرف) في القاموس.");
+    await channel.send("<:icons8wrong1001:1415979909825695914> لا توجد كلمات بطول مناسب في القاموس.");
     return;
   }
 
@@ -987,7 +1164,8 @@ async function startWordleForUser(channel, userId) {
     letterStates: {}, // خريطة حرف -> green/purple/grey
     currentMessage: null,
     ended: false,
-    won: false
+    won: false,
+    channelId: channel.id, // ربط الجلسة بالقناة التي بدأت فيها
   };
 
   wordleSessions.set(userId, session);
@@ -1000,11 +1178,15 @@ async function handleWordleStartMessage(msg) {
     if (msg.author?.bot) return;
     const userId = msg.author.id;
 
-    // إن كانت جلسة سابقة لم تُغلق، ننهيها محليًا
     const prev = wordleSessions.get(userId);
+    // إذا توجد جلسة نشطة في قناة أخرى، لا نغلقها تلقائياً ونمنع البدء هنا
+    if (prev && !prev.ended && prev.channelId && prev.channelId !== msg.channel.id) {
+      return msg.reply(`لديك جولة نشطة في <#${prev.channelId}>. أنهِها هناك (زر "انسحاب") أو انتظر انتهائها، ثم اكتب: حروف`).catch(() => {});
+    }
+
+    // إن كانت جلسة سابقة في نفس القناة أو منتهية، نغلقها ونبدأ جولة جديدة
     if (prev && !prev.ended) {
       prev.ended = true;
-      // حذف آخر رسالة للوحة القديمة بسرعة
       if (prev.currentMessage) setTimeout(() => prev.currentMessage.delete().catch(() => {}), 1000);
       wordleSessions.delete(userId);
     }
@@ -1024,6 +1206,9 @@ async function handleWordleGuess(msg) {
     const userId = msg.author.id;
     const s = wordleSessions.get(userId);
     if (!s || s.ended) return;
+
+    // رفض التخمين إذا كان في قناة غير القناة المرتبطة بالجولة
+    if (msg.channel.id !== s.channelId) return;
 
     const text = (msg.content || "").trim();
     if (!text || text === "حروف" || text === "حروف!") return;
@@ -1088,12 +1273,9 @@ async function handleWordleButtons(i) {
 
     const parts = id.split("_"); // wordle_quit_{userId}_{attemptNo} | wordle_restart_{userId}_{attemptNo}
     const action = parts[1];
+    const targetUserId = parts[2]; // attemptNo اختياري بالجزء [3]
 
-    // دعم قديم: wordle_quit_{userId}
-    const targetUserId = parts[2];
-    // attemptNo اختياري هنا
-    const attemptStr = parts[3];
-
+    // حماية: نفس صاحب الجلسة فقط
     if (i.user.id !== targetUserId) {
       if (!i.replied && !i.deferred) {
         await i.reply({ content: "<:icons8wrong1001:1415979909825695914> هذه الجلسة ليست لك.", ephemeral: true }).catch(() => {});
@@ -1102,6 +1284,48 @@ async function handleWordleButtons(i) {
     }
 
     const s = wordleSessions.get(targetUserId);
+
+    // السماح دائمًا بـ "restart" حتى لو لا توجد جلسة (مثلاً بعد نهاية الجولة)
+    if (action === "restart") {
+      // إن كانت هناك جلسة نشطة في قناة مختلفة، امنع ووجّه للقناة الصحيحة
+      if (s && !s.ended && s.channelId && s.channelId !== i.channelId) {
+        if (!i.replied && !i.deferred) {
+          await i.reply({ content: `لديك جولة نشطة في <#${s.channelId}>. أنهيها هناك أولاً.`, ephemeral: true }).catch(() => {});
+        }
+        return;
+      }
+
+      if (!i.deferred && !i.replied) await i.deferUpdate().catch(() => {});
+
+      // إن وُجدت جلسة في نفس القناة ولم تُنهَ بعد، أغلقها بلطف ثم ابدأ من جديد
+      if (s && !s.ended) {
+        try {
+          s.ended = true;
+          if (s.currentMessage) setTimeout(() => s.currentMessage.delete().catch(() => {}), 500);
+        } catch {}
+        wordleSessions.delete(targetUserId);
+      }
+
+      // ابدأ جولة جديدة في نفس القناة الحالية
+      await startWordleForUser(i.channel, targetUserId);
+      return;
+    }
+
+    // من هنا فصاعدًا (Quit وغيره) تتطلب وجود جلسة
+    if (!s) {
+      if (!i.replied && !i.deferred) {
+        await i.reply({ content: "لا توجد جولة نشطة. أرسل: حروف", ephemeral: true }).catch(() => {});
+      }
+      return;
+    }
+
+    // قيد القناة: لا نسمح بالأزرار خارج قناة الجلسة
+    if (i.channelId !== s.channelId) {
+      if (!i.replied && !i.deferred) {
+        await i.reply({ content: `هذه الجولة نشطة فقط في <#${s.channelId}>.`, ephemeral: true }).catch(() => {});
+      }
+      return;
+    }
 
     if (action === "quit") {
       if (!i.deferred && !i.replied) await i.deferUpdate().catch(() => {});
@@ -1117,11 +1341,7 @@ async function handleWordleButtons(i) {
       return;
     }
 
-    if (action === "restart") {
-      if (!i.deferred && !i.replied) await i.deferUpdate().catch(() => {});
-      await startWordleForUser(i.channel, targetUserId);
-      return;
-    }
+    // إجراءات مستقبلية أخرى لو أضفتها...
   } catch (e) {
     console.error("wordle button error:", e);
     try {
@@ -1193,16 +1413,16 @@ const losses = Math.max(played - wins, 0);
 const winRate = played ? ((wins / played) * 100).toFixed(2) : "0.00";
 
 const embed = new EmbedBuilder()
-  .setTitle("📊 إحصائيات لعبة الحروف")
+  .setTitle(" إحصائيات لعبة الحروف")
   .setColor("Blue")
   .addFields(
-    { name: "اللعبات", value: `${played}`, inline: true },
-    { name: "الانتصارات", value: `${wins}`, inline: true },
-    { name: "الخسائر", value: `${losses}`, inline: true },
-    { name: "نسبة الفوز", value: `${winRate}%`, inline: true },
-    { name: "سلسلة الانتصارات الحالية", value: `${currentStreak}`, inline: true },
-    { name: "أفضل سلسلة", value: `${bestStreak}`, inline: true },
-    { name: "إجمالي الأرباح", value: `${earnings.toLocaleString("en-US")}`, inline: true },
+    { name: "اللعبات", value: `${played}      <:icons8controller100:1407432162348634163>`, inline: true },
+    { name: "الانتصارات", value: `${wins}       <:icons8trophy100:1416394314904244234> `, inline: true },
+    { name: "الخسائر", value: `${losses}      <:icons8loss100:1416394312056442980> `, inline: true },
+    { name: "نسبة الفوز", value: `${winRate}%      <:icons8piechart100:1416394268716568789> `, inline: true },
+    { name: "سلسلة الانتصارات الحالية", value: `${currentStreak}         <:icons8series100:1416510089811988562>`, inline: true },
+    { name: "أفضل سلسلة", value: `${bestStreak}      <:icons8series1001:1416510081822101677> `, inline: true },
+    { name: "إجمالي الأرباح", value: `${earnings.toLocaleString("en-US")}           <:icons8money100:1416394266066030742> `, inline: true },
   );
   
     return msg.reply({ embeds: [embed] });
@@ -1226,14 +1446,13 @@ ui.messageFilter(
   (m) => {
     try {
       if (!m?.author || m.author.bot) return false;
-      return wordleSessions.has(m.author.id);
+      const s = wordleSessions.get(m.author.id);
+      // يلتقط فقط إذا كانت هناك جلسة نشطة لنفس المستخدم وفي نفس القناة
+      return Boolean(s && !s.ended && s.channelId === m.channelId);
     } catch { return false; }
   },
   handleWordleGuess
 );
-
-
-
 
 /******************************************
  * نظام تحديد مبلغ الرهان الموحد والمحسن     *
@@ -1243,9 +1462,9 @@ const soloGamesMap = {
   soloroulette: "startSoloRoulette",
   soloslot: "startSlotMachine",
   solomystery: "startSoloMystery",
-  solocard: "startSoloBus",
-  soloblackjack: "startBlackjackSolo",
-  solobuckshot: "startBuckshotSolo",
+  solobus: "startSoloBus",
+  blackjack: "startBlackjackSolo",
+  buckshot: "startBuckshotSolo",
 };
 
 const soloGameFunctions = {
@@ -1369,12 +1588,13 @@ client.on("interactionCreate", async (i) => {
 
 const gameNames = {
   soloroulette: " روليت",
-  soloslot: " مكينة السلوت",
+  soloslot: " ماكينة السلوت",
   solomystery: " صندوق الحظ",
-  solocard: " تحدي الاوراق ",
-  soloblackjack: " بلاك جاك",
-  solobuckshot: " باكشوت"
+  solobus: " تحدي الاوراق ",
+  blackjack: " بلاك جاك",
+  buckshot: " باكشوت"
 };
+const getArabicGameName = (id) => gameNames[id] || id;
 
 async function showBetInterface(inter, userId, gameId, balance, amount = 1000, forceUpdate = false) {
   const gameName = gameNames[gameId] || gameId;
@@ -1473,57 +1693,53 @@ async function getSoloStatsEmbed(interaction, filterGameId = "all") {
 
   if (!doc || !doc.stats || Object.keys(doc.stats).length === 0) {
     return new EmbedBuilder()
-      .setTitle("📊 احصائياتك")
+      .setTitle(" احصائياتك")
       .setDescription("لا توجد بيانات لعرضها.")
       .setColor("Orange");
   }
 
   const embed = new EmbedBuilder()
-    .setTitle("📊 احصائيات الالعاب الفردية")
+    .setTitle(" احصائيات الالعاب الفردية")
     .setColor("#3498db")
     .setThumbnail(interaction.user.displayAvatarURL());
 
   const stats = doc.stats;
 
+  // نحول كل لعبة إلى "بلوك نصي" قابل للدمج
+  const blocks = [];
   for (const [game, data] of Object.entries(stats)) {
     if (filterGameId !== "all" && filterGameId !== game) continue;
 
+    const displayName = getArabicGameName(game);
     const winRate = data.totalGames > 0 ? ((data.wins / data.totalGames) * 100).toFixed(1) : "0";
+
+    const block =
+      ` ${displayName}\n`    +
+      ` مرات اللعب: **${data.totalGames}**    <:icons8controller100:1407432162348634163>   \n`   +
+      ` الفوز: **${data.wins}**   <:icons8trophy100:1416394314904244234>   \n`   +
+      ` الخسارة: **${data.loses}**   <:icons8loss100:1416394312056442980>   \n`   +
+      ` الفوز:  **${winRate}%**   <:icons8piechart100:1416394268716568789>   \n   `   +
+      ` الصافي:  **${data.net.toLocaleString("en-US")}**   <:icons8money100:1416394266066030742>   \n  `;
+
+    blocks.push(block);
+  }
+
+  // ندمج كل لعبتين داخل حقل واحد، والحقل يكون inline لعمل أعمدة
+  for (let i = 0; i < blocks.length; i += 2) {
+    const a = blocks[i];
+    const b = blocks[i + 1];
+    const value = b ? `${a}\n\u200B\n${b}` : a; // \u200B فصل بسيط بين اللعبتين
+
     embed.addFields({
-      name: `🎮 ${game}`,
-      value: `🕹️ الالعاب: **${data.totalGames}**
-🏆 الفوز: **${data.wins}**
-💀 الخسارة: **${data.loses}**
-📈 الفوز: **${winRate}%**
-💰 الصافي: **${data.net.toLocaleString("en-US")}**
-🕓 آخر لعب: <t:${Math.floor(new Date(data.lastPlayed).getTime() / 1000)}:R>`,
-      inline: false
+      name: "\u200B",      // اسم مخفي
+      value,               // لعبتان في نفس الحقل
+      inline: true         // يجعلها عمودًا ضمن 3 أعمدة في الصف
     });
   }
 
   return embed;
 }
 
-
-// <:icons8correct1002:1415979896433278986> دالة اختيارية تعرض اسم اللعبة بشكل جميل بدل gameId
-function getGameDisplayName(gameId) {
-  const names = {
-    soloroulette: "الروليت",
-    soloslot: "ماكينة السلوت",
-    solomystery: "صندوق الفوضى",
-    solocard: "تحدي الورق",
-    soloblackjack: "بلاك جاك",
-    solobuckshot: "باكشوت"
-  };
-  return names[gameId] || gameId;
-}
-
-
-// 🟢 التصدير لو بتستخدم system modules
-module.exports = {
-  updateSoloStats,
-  getSoloStatsEmbed
-};
 
 // 🧠 تخزين الرهانات الفردية
 const activeSoloBets = {};
@@ -1672,7 +1888,7 @@ async function startSoloRoulette(interaction, bet) {
   const parityRow = new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId("solo_roulette_parity_even").setLabel("زوجي").setStyle(ButtonStyle.Secondary).setEmoji("1407423118993002668"),
     new ButtonBuilder().setCustomId("solo_roulette_parity_odd").setLabel("فردي").setStyle(ButtonStyle.Secondary).setEmoji("1407422287652720750"),
-    new ButtonBuilder().setCustomId("solo_roulette_cancel").setLabel(" انسحاب").setStyle(ButtonStyle.Secondary).setEmoji("1415979909825695914")
+    new ButtonBuilder().setCustomId("solo_roulette_cancel").setLabel(" انسحب").setStyle(ButtonStyle.Secondary).setEmoji("1416383140338991244")
   );
 
   // ازرار النطاق
@@ -2011,10 +2227,10 @@ async function startSoloMystery(interaction, bet) {
 
   // ازرار الصناديق
   const row = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId("box_1").setLabel("صندوق").setStyle(ButtonStyle.Secondary).setEmoji("1407779540482265190"),
-    new ButtonBuilder().setCustomId("box_2").setLabel("صندوق").setStyle(ButtonStyle.Secondary).setEmoji("1407779855764029570"),
-    new ButtonBuilder().setCustomId("box_3").setLabel("صندوق").setStyle(ButtonStyle.Secondary).setEmoji("1407779532001247333"),
-    new ButtonBuilder().setCustomId("box_quit").setLabel("انسحاب").setStyle(ButtonStyle.Secondary).setEmoji("1415979909825695914")
+    new ButtonBuilder().setCustomId("box_1").setStyle(ButtonStyle.Secondary).setEmoji("1407779540482265190"),
+    new ButtonBuilder().setCustomId("box_2").setStyle(ButtonStyle.Secondary).setEmoji("1407779855764029570"),
+    new ButtonBuilder().setCustomId("box_3").setStyle(ButtonStyle.Secondary).setEmoji("1407779532001247333"),
+    new ButtonBuilder().setCustomId("box_quit").setLabel("انسحب").setStyle(ButtonStyle.Secondary).setEmoji("1416383140338991244")
   );
 
   // قالب البداية
@@ -2248,21 +2464,21 @@ function buildButtonsForStage(stage) {
     return new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId("bus_red").setLabel("🔴 احمر").setStyle(ButtonStyle.Secondary),
       new ButtonBuilder().setCustomId("bus_black").setLabel("⚫ اسود").setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder().setCustomId("bus_quit").setLabel(" انسحاب").setStyle(ButtonStyle.Secondary).setEmoji("1408077754557136926")
+      new ButtonBuilder().setCustomId("bus_quit").setLabel("انسحب").setStyle(ButtonStyle.Secondary).setEmoji("1416383140338991244")
     );
   }
   if (stage === 2) {
     return new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId("bus_high").setLabel(" اكبر").setStyle(ButtonStyle.Secondary).setEmoji("1407783383169503305"),
       new ButtonBuilder().setCustomId("bus_low").setLabel(" اصغر").setStyle(ButtonStyle.Secondary).setEmoji("1407783374529237203"),
-      new ButtonBuilder().setCustomId("bus_quit").setLabel(" انسحاب ×2").setStyle(ButtonStyle.Secondary).setEmoji("1408077754557136926")
+      new ButtonBuilder().setCustomId("bus_quit").setLabel("انسحب ×2").setStyle(ButtonStyle.Secondary).setEmoji("1416383140338991244")
     );
   }
   if (stage === 3) {
     return new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId("bus_inside").setLabel(" داخل").setStyle(ButtonStyle.Secondary).setEmoji("1407784188681392201"),
       new ButtonBuilder().setCustomId("bus_outside").setLabel(" خارج").setStyle(ButtonStyle.Secondary).setEmoji("1407784181127188571"),
-      new ButtonBuilder().setCustomId("bus_quit").setLabel(" انسحاب ×5").setStyle(ButtonStyle.Secondary).setEmoji("1408077754557136926")
+      new ButtonBuilder().setCustomId("bus_quit").setLabel("انسحب ×5").setStyle(ButtonStyle.Secondary).setEmoji("1416383140338991244")
     );
   }
   if (stage === 4) {
@@ -2271,7 +2487,7 @@ function buildButtonsForStage(stage) {
       new ButtonBuilder().setCustomId("bus_♦️").setEmoji("1407785057414021272").setStyle(ButtonStyle.Secondary),
       new ButtonBuilder().setCustomId("bus_♣️").setEmoji("1407785047217541260").setStyle(ButtonStyle.Secondary),
       new ButtonBuilder().setCustomId("bus_♠️").setEmoji("1407785074346299392").setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder().setCustomId("bus_quit").setLabel(" انسحاب ×10").setStyle(ButtonStyle.Secondary).setEmoji("1408077754557136926")
+      new ButtonBuilder().setCustomId("bus_quit").setLabel("انسحب ×10").setStyle(ButtonStyle.Secondary).setEmoji("1416383140338991244")
     );
   }
   return new ActionRowBuilder();
@@ -2377,7 +2593,7 @@ async function pushStageUI(game, user, revealed) {
     if (!still || still.stage !== game.stage) return;
     rideBusGames.delete(game.userId);
     const retryRow = new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId("solo_retry_solocard").setLabel(" اعادة المحاولة").setEmoji("1407461810566860941").setStyle(ButtonStyle.Secondary)
+      new ButtonBuilder().setCustomId("solo_retry_solobus").setLabel(" اعادة المحاولة").setEmoji("1407461810566860941").setStyle(ButtonStyle.Secondary)
     );
     await safeEditMessage(game.channelId, game.msgId, { content: `⏰ انتهى الوقت! خسرت الرهان.`, files: [], components: [retryRow] });
     setTimeout(() => safeDeleteMessage(game.channelId, game.msgId), 15000);
@@ -2434,7 +2650,7 @@ async function handleBusButtons(i) {
     ];
     const img = revealed ? await renderRideBusGame(game, i.user, Math.min(game.stage, 4), norm) : null;
     const retryRow = new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId("solo_retry_solocard").setLabel(" اعادة المحاولة").setEmoji("1407461810566860941").setStyle(ButtonStyle.Secondary)
+      new ButtonBuilder().setCustomId("solo_retry_solobus").setLabel(" اعادة المحاولة").setEmoji("1407461810566860941").setStyle(ButtonStyle.Secondary)
     );
     await safeEditMessage(game.channelId, game.msgId, { content, files: img ? [img] : [], components: [retryRow] });
     setTimeout(() => safeDeleteMessage(game.channelId, game.msgId), 15000);
@@ -2525,7 +2741,7 @@ async function handleBusButtons(i) {
 
         const img = await renderRideBusGame(game, i.user, 4, [drawn[0], drawn[1], drawn[2], card4]);
         await safeEditMessage(game.channelId, game.msgId, {
-          content: `🏆 البطاقة كانت ${suitEmoji[card4.suit]}${card4.value}، وفزت بـ ${reward.toLocaleString("en-US")} ريال!`,
+          content: `<:icons8trophy100:1416394314904244234> البطاقة كانت ${suitEmoji[card4.suit]}${card4.value}، وفزت بـ ${reward.toLocaleString("en-US")} ريال!`,
           files: [img],
           components: []
         });
@@ -2704,9 +2920,9 @@ async function renderBlackjack(game, user) {
   ctx.textAlign = "center";
 
   // 📝 مجموع اللاعب
-  ctx.fillText(`مجموعك: ${playerTotal}`, 100, 375);
+  ctx.fillText(`مجموعك: ${playerTotal}`, 125, 375);
   // 📝 مجموع البوت
-  ctx.fillText(`البوت:  ${botTotal}`, 100, 850);
+  ctx.fillText(`البوت:  ${botTotal}`, 125, 850);
 
   return canvas.toBuffer("image/png");
 }
@@ -2719,7 +2935,7 @@ async function sendBlackjackMessage(channel, game, user) {
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId("bj_hit").setLabel(" سحب ").setStyle(ButtonStyle.Secondary).setEmoji("1407789070494597281"),
     new ButtonBuilder().setCustomId("bj_stand").setLabel(" تثبيت ").setStyle(ButtonStyle.Secondary).setEmoji("1407789061510402161"),
-    new ButtonBuilder().setCustomId("bj_quit").setLabel(" انسحاب ").setStyle(ButtonStyle.Secondary).setEmoji("1415979909825695914")
+    new ButtonBuilder().setCustomId("bj_quit").setLabel(" انسحاب ").setStyle(ButtonStyle.Secondary).setEmoji("1416383140338991244")
   );
 
   const msg = await channel.send({ files: [attachment], components: [row] });
@@ -2761,7 +2977,7 @@ async function handleBjHit(i) {
 
     const retryRow = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
-        .setCustomId("solo_retry_soloblackjack")
+        .setCustomId("solo_retry_blackjack")
         .setLabel("اعادة المحاولة")
         .setEmoji("1407461810566860941")
         .setStyle(ButtonStyle.Secondary)
@@ -2812,7 +3028,7 @@ async function handleBjStand(i) {
     await updateBalanceWithLog(db, id, payout, "♠️ Blackjack - فوز").catch(() => {});
     await addBalance(id, game.bet).catch(() => {});
     await updateSoloStats(id, "blackjack", game.bet, true, payout).catch(() => {});
-    resultText = `🏆 فزت!\nمجموعك: ${playerTotal} مقابل البوت: ${botTotal}\nربحت ${payout} كاش`;
+    resultText = `<:icons8trophy100:1416394314904244234> فزت!\nمجموعك: ${playerTotal} مقابل البوت: ${botTotal}\nربحت ${payout} كاش`;
   } else if (playerTotal < botTotal) {
     await db.collection("transactions").insertOne({
       userId: id,
@@ -2836,7 +3052,7 @@ async function handleBjStand(i) {
 
   const retryRow = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
-      .setCustomId("solo_retry_soloblackjack")
+      .setCustomId("solo_retry_blackjack")
       .setLabel("اعادة المحاولة")
       .setEmoji("1407461810566860941")
       .setStyle(ButtonStyle.Secondary)
@@ -3045,7 +3261,8 @@ async function sendBuckshotGameUI(interactionOrMessage, userId, log = null) {
   if (log) {
     ctx.fillStyle = "white";
   ctx.font = "bold 50px Cairo";
-    ctx.fillText(log, 100, 75);
+  ctx.textAlign = "center";
+    ctx.fillText(log, canvas.width / 2, 75);
   }
 
   const buffer = canvas.toBuffer("image/png");
@@ -3056,7 +3273,7 @@ async function sendBuckshotGameUI(interactionOrMessage, userId, log = null) {
   const mainRow = new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId("buck_shoot_bot").setLabel(" بوت").setStyle(ButtonStyle.Secondary).setDisabled(!isPlayerTurn).setEmoji("1407795197760503919"),
     new ButtonBuilder().setCustomId("buck_shoot_self").setLabel(" نفسك").setStyle(ButtonStyle.Secondary).setDisabled(!isPlayerTurn).setEmoji("1407795197760503919"),
-    new ButtonBuilder().setCustomId("buck_quit").setLabel("انسحب").setStyle(ButtonStyle.Secondary).setDisabled(!isPlayerTurn).setEmoji("1415979909825695914")
+    new ButtonBuilder().setCustomId("buck_quit").setLabel("انسحب").setStyle(ButtonStyle.Secondary).setDisabled(!isPlayerTurn).setEmoji("1416383140338991244")
   );
 
   const toolRow = new ActionRowBuilder().addComponents(
@@ -3176,7 +3393,7 @@ async function handleBuckshotSoloButtons(i) {
     if (game.turn === "bot" && (game.buffs.botCuffedSkips || 0) > 0) {
       game.buffs.botCuffedSkips--;
       game.turn = "player";
-      log += `\n (الاصفاد فعّالة: سقط دور البوت، دورك مرة ثانية)`;
+      log += `\n (ا دورك مرة ثانية)`;
     }
 
     // مكافاة قلوب منخفضة مرة واحدة
@@ -3215,7 +3432,7 @@ async function finishBuckshotGame(game, result, log) {
     await updateBalanceWithLog(db, userId, payout, "🔫 Buckshot - فوز").catch(() => {});
     await addBalance(userId, game.bet).catch(() => {});
     await updateSoloStats(userId, "buckshot", game.bet, true, payout).catch(() => {});
-    title = "🏆 فزت!";
+    title = "<:icons8trophy100:1416394314904244234> فزت!";
     color = 0x2ecc71;
     footer = `ربحت ${payout.toLocaleString("en-US")} ريال`;
   } else if (result === "bot") {
@@ -3246,7 +3463,7 @@ async function finishBuckshotGame(game, result, log) {
 
   const retryRow = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
-      .setCustomId("solo_retry_solobuckshot")
+      .setCustomId("solo_retry_buckshot")
       .setLabel("اعادة المحاولة")
       .setEmoji("1407461810566860941")
       .setStyle(ButtonStyle.Secondary)
@@ -3341,7 +3558,7 @@ function buildLobbyRow(isFull = false) {
   return new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId("lobby_join").setLabel(" انضمام").setStyle(ButtonStyle.Secondary).setEmoji("1408077902859472966").setDisabled(isFull),
     new ButtonBuilder().setCustomId("lobby_bet").setLabel(" تغيير الرهان").setStyle(ButtonStyle.Secondary).setEmoji("1408077696688459836"),
-    new ButtonBuilder().setCustomId("lobby_leave").setLabel(" انسحاب").setStyle(ButtonStyle.Secondary).setEmoji("1408077754557136926"),
+    new ButtonBuilder().setCustomId("lobby_leave").setLabel("انسحاب").setStyle(ButtonStyle.Secondary).setEmoji("1408077754557136926"),
     new ButtonBuilder().setCustomId("lobby_start").setLabel(" ابدا اللعبة").setStyle(ButtonStyle.Secondary).setEmoji("1408080743971950653")
   );
 }
@@ -3800,20 +4017,20 @@ async function showMultiplayerStats(user, interaction) {
   const winRate = totalGames > 0 ? ((totalWins / totalGames) * 100).toFixed(1) : "0";
 
   const embed = new EmbedBuilder()
-    .setTitle(`📊 احصائيات الالعاب الجماعية لـ ${user.username}`)
+    .setTitle(` احصائيات الالعاب الجماعية لـ ${user.username}`)
     .addFields(
-      { name: "عدد مرات الفوز", value: `${totalWins}`, inline: true },
-      { name: "عدد مرات الخسارة", value: `${totalLosses}`, inline: true },
-      { name: "مجموع الجولات", value: `${totalGames}`, inline: true },
-      { name: "نسبة الفوز", value: `${winRate}%`, inline: true },
-      { name: "اجمالي الارباح", value: `${totalEarned} 💰`, inline: true },
-      { name: "اجمالي الخسائر", value: `${totalLost} 💸`, inline: true },
-      { name: "الصافي", value: `${net >= 0 ? `+${net}` : net} 🧾`, inline: false }
+      { name: " مرات الفوز", value: `${totalWins} <:icons8trophy100:1416394314904244234> `, inline: true },
+      { name: " مرات الخسارة", value: `${totalLosses} <:icons8loss100:1416394312056442980> `, inline: true },
+      { name: "مجموع الجولات", value: `${totalGames}  <:icons8controller100:1407432162348634163> `, inline: true },
+      { name: "نسبة الفوز", value: `${winRate}% <:icons8piechart100:1416394268716568789> `, inline: true },
+      { name: "اجمالي الارباح", value: `${totalEarned.toLocaleString("en-US")} <:icons8money100:1416394266066030742> `, inline: true },
+      { name: "اجمالي الخسائر", value: `${totalLost.toLocaleString("en-US")} <:icons8money100:1416394266066030742> `, inline: true },
+      { name: "الصافي", value: `${net >= 0 ? `+${net.toLocaleString("en-US")} ` : net} <:icons8money100:1416394266066030742> `, inline: false }
     )
     .setColor(net >= 0 ? 0x2ecc71 : 0xe74c3c)
     .setFooter({ text: "احصائيات جميع الالعاب الجماعية حتى الآن" });
 
-  await interaction.reply({ embeds: [embed], ephemeral: true });
+  await interaction.reply({ embeds: [embed], ephemeral: false });
 }
 
 /******************************************
@@ -4103,7 +4320,7 @@ async function finishGameMulti(channelId) {
         userId: playerId, amount: -player.bet, reason: logMsg, timestamp: new Date()
       }).catch(() => {});
     } else if (total === bestScore) {
-      status = total === 21 ? "🏆 بلاك جاك!" : `<:icons8correct1002:1415979896433278986> ${total}`;
+      status = total === 21 ? "<:icons8trophy100:1416394314904244234> بلاك جاك!" : `<:icons8correct1002:1415979896433278986> ${total}`;
       reward = Math.max(player.bet * 2, totalPot);
       logMsg = "🃏 Blackjack جماعي - فوز";
       // ايداع دفعة واحدة (payout) فقط وفق النظام الموحّد
@@ -4344,7 +4561,7 @@ async function handleColorTimeout(channelId) {
 
   if (game.players.length === 2) {
     const winner = game.players.find(p => p.id !== loser.id);
-    const msg = await channel.send(`⏱️ <@${loser.id}> تاخر وتم استبعاده.\n🏆 الفائز: <@${winner.id}>`).catch(() => null);
+    const msg = await channel.send(`⏱️ <@${loser.id}> تاخر وتم استبعاده.\n<:icons8trophy100:1416394314904244234> الفائز: <@${winner.id}>`).catch(() => null);
 
     // حذف رسالة الفوز ورسالة اللعبة بعد 20 ثانية
     if (msg) setTimeout(() => msg.delete().catch(() => {}), 25000);
@@ -4438,7 +4655,7 @@ async function finishColorGame(channelId) {
   let resultMsg;
 
   if (winners.length === 1) {
-    resultMsg = await channel.send(`🎉 انتهت اللعبة!\n🏆 الفائز: <@${winners[0].id}> بعدد ${highest} من الخانات.`);
+    resultMsg = await channel.send(`🎉 انتهت اللعبة!\n<:icons8trophy100:1416394314904244234> الفائز: <@${winners[0].id}> بعدد ${highest} من الخانات.`);
   } else {
     const mentionList = winners.map(p => `<@${p.id}>`).join(" و ");
     resultMsg = await channel.send(`🎉 انتهت اللعبة بالتعادل!\n🤝 الفائزون: ${mentionList} بعدد ${highest} من الخانات.`);
@@ -4558,7 +4775,7 @@ async function startTimeRoom(channelId) {
       new ButtonBuilder()
         .setCustomId(`withdraw_${p.id}`)
         .setLabel(`${p.username}`)
-        .setEmoji("1408077754557136926")
+        .setEmoji("1416383140338991244")
         .setStyle(ButtonStyle.Secondary)
     );
   }
@@ -4751,8 +4968,8 @@ async function handleTimeRoomWithdraw(i) {
       row.addComponents(
         new ButtonBuilder()
           .setCustomId(`withdraw_${p.id}`)
-          .setLabel(`انسحاب (${p.username})`)
-          .setEmoji("1408077754557136926")
+          .setLabel(`${p.username}`)
+          .setEmoji("1416383140338991244")
           .setStyle(ButtonStyle.Secondary)
       );
     }
@@ -5139,8 +5356,8 @@ async function renderMultiplayerBuckshot(channelId) {
   if (game.log) {
     ctx.fillStyle = "white";
   ctx.font = "50px Cairo";
-      ctx.textAlign = "center";
-    ctx.fillText(game.log, 120, 75);
+  ctx.textAlign = "center";
+    ctx.fillText(game.log, canvas.width/2, 75);
   }
 
   const buffer = canvas.toBuffer("image/png");
@@ -5330,7 +5547,7 @@ async function finishExplosionGame(channelId, winner) {
 
   const channel = await client.channels.fetch(channelId);
   await game.gameMessage?.edit({
-    content: `🏆 الفائز هو <@${winner.id}>! حصل على ${payout.toLocaleString("en-US")} 💰`,
+    content: `<:icons8trophy100:1416394314904244234> الفائز هو <@${winner.id}>! حصل على ${payout.toLocaleString("en-US")} 💰`,
     files: [],
     components: []
   }).catch(() => {});
@@ -5477,7 +5694,7 @@ async function finishRouletteGame(channelId, winner) {
   }
 
   await game.gameMessage?.edit({
-    content: `🏆 الفائز هو <@${winner.id}>! وربح ${payout.toLocaleString("en-US")} 💰`,
+    content: `<:icons8trophy100:1416394314904244234> الفائز هو <@${winner.id}>! وربح ${payout.toLocaleString("en-US")} 💰`,
     components: []
   }).catch(() => {});
 
@@ -5801,7 +6018,7 @@ async function renderRouletteGame(channelId) {
       new ButtonBuilder()
         .setCustomId("roulette_skip")
         .setLabel(" انسحاب")
-        .setEmoji("1408077754557136926")
+        .setEmoji("1416383140338991244")
         .setStyle(ButtonStyle.Secondary)
         .setDisabled(aliveCount2 === 1)
     );
@@ -6027,9 +6244,9 @@ async function handleGambleCategory(i) {
     { label: " روليت", value: "soloroulette", emoji: { id: "1407429268350439535", animated: true } },
     { label: " مكينة السلوت", value: "soloslot", emoji: { id: "1407428069844848741", animated: true } },
     { label: " صندوق الحظ", value: "solomystery", emoji: { id: "1407431521631076412", animated: true } },
-    { label: " تحدي الاوراق", value: "solocard", emoji: { id: "1407431501792149546", animated: true } },
-    { label: " بلاك جاك", value: "soloblackjack", emoji: { id: "1407431511564619797", animated: true } },
-    { label: " باكشوت", value: "solobuckshot", emoji: { id: "1407431387606290599", animated: true } }
+    { label: " تحدي الاوراق", value: "solobus", emoji: { id: "1407431501792149546", animated: true } },
+    { label: " بلاك جاك", value: "blackjack", emoji: { id: "1407431511564619797", animated: true } },
+    { label: " باكشوت", value: "buckshot", emoji: { id: "1407431387606290599", animated: true } }
   ];
 
   const multiGames = [
